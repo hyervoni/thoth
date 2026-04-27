@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Thoth</title>
 <link rel="icon" type="image/png" href="favicon.png">
@@ -25,6 +26,9 @@
   button, input, textarea {
     color: inherit;
     font: inherit;
+  }
+  button, [role="button"], input[type="range"], .tap-zone {
+    touch-action: manipulation;
   }
   html, body {
     height: 100%;
@@ -544,7 +548,13 @@
     bottom: 0;
     width: 25%;
     z-index: 5;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
   }
+  .tap-zone:focus { outline: none; }
   .tap-zone.left { left: 0; }
   .tap-zone.right { right: 0; }
 </style>
@@ -557,8 +567,8 @@
 </header> -->
 
 <div class="stage">
-  <div class="tap-zone left" id="tapLeft"></div>
-  <div class="tap-zone right" id="tapRight"></div>
+  <button class="tap-zone left" id="tapLeft" aria-label="Skip back" type="button"></button>
+  <button class="tap-zone right" id="tapRight" aria-label="Skip forward" type="button"></button>
 
   <div class="word-frame">
     <div class="word" id="word">

@@ -19,7 +19,7 @@ Thoth is a single-file speed-reader built around **Rapid Serial Visual Presentat
 - **Chapter navigation** with a live progress indicator
 - **Bookmarks** to save and restore reading positions
 - **Adjustable WPM** (150–800) with live speed control
-- **Local persistence**: library and progress stay on your device (IndexedDB) — no account, no cloud
+- **Fully offline**: works without network after first load, via a service worker that caches the app shell. Library and progress stay on your device (IndexedDB) — no account, no cloud, no third-party requests
 - **Editorial typography** (Fraunces, Newsreader, JetBrains Mono) on a dark, paper-tone palette
 - **Zero backend**: a single static HTML file, deployable anywhere
 
@@ -27,8 +27,9 @@ Thoth is a single-file speed-reader built around **Rapid Serial Visual Presentat
 
 - Vanilla JavaScript — no framework, no build step
 - IndexedDB for client-side persistence
-- [JSZip](https://stuk.github.io/jszip/) (loaded on demand from jsDelivr) for EPUB unpacking
-- Google Fonts for typography
+- Service worker for offline caching of the app shell
+- [JSZip](https://stuk.github.io/jszip/) (self-hosted) for EPUB unpacking
+- Self-hosted variable fonts (Latin): Fraunces, Newsreader, JetBrains Mono
 
 ## Usage
 

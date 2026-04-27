@@ -1182,9 +1182,17 @@
   }
 
   epubBtn.addEventListener('click', () => epubInput.click());
+  const MAX_EPUB_SIZE = 100 * 1024 * 1024; // 100 MB — guards against IndexedDB quota errors
+
   epubInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    if (file.size > MAX_EPUB_SIZE) {
+      const sizeMb = (file.size / 1024 / 1024).toFixed(1);
+      alert('File too large (' + sizeMb + ' MB). Max supported: 100 MB.');
+      epubInput.value = '';
+      return;
+    }
     const original = epubBtn.textContent;
     epubBtn.textContent = 'Processing…';
     epubBtn.disabled = true;

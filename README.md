@@ -19,7 +19,7 @@ Thoth is a single-file speed-reader built around **Rapid Serial Visual Presentat
 - **Chapter navigation** with a live progress indicator
 - **Bookmarks** to save and restore reading positions
 - **Adjustable WPM** (150–800) with live speed control
-- **Offline-first**: library and progress persist locally via IndexedDB
+- **Local persistence**: library and progress stay on your device (IndexedDB) — no account, no cloud
 - **Editorial typography** (Fraunces, Newsreader, JetBrains Mono) on a dark, paper-tone palette
 - **Zero backend**: a single static HTML file, deployable anywhere
 

@@ -108,7 +108,7 @@
   .word {
     font-family: 'Newsreader', Georgia, serif;
     font-weight: 500;
-    font-size: clamp(40px, 7vw, 72px);
+    font-size: min(72px, max(40px, 7vw));
     letter-spacing: -0.005em;
     font-variation-settings: "opsz" 72;
     white-space: nowrap;
@@ -538,7 +538,7 @@
   .empty-hint {
     color: var(--ink-soft);
     font-style: italic;
-    font-size: clamp(20px, 3.5vw, 28px);
+    font-size: min(28px, max(20px, 3.5vw));
     font-weight: 300;
     text-align: center;
   }
@@ -1142,8 +1142,9 @@
     const opfDoc = new DOMParser().parseFromString(opfXml, 'application/xml');
     const opfDir = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
 
+    const titleEl = opfDoc.querySelector('metadata > [*|title], metadata > title');
     const bookTitle =
-      opfDoc.querySelector('metadata > [*|title], metadata > title')?.textContent?.trim()
+      (titleEl && titleEl.textContent ? titleEl.textContent.trim() : '')
       || file.name.replace(/\.epub$/i, '');
 
     const manifest = {};
@@ -1164,13 +1165,15 @@
       const xhtml = await f.async('string');
       const doc = new DOMParser().parseFromString(xhtml, 'text/html');
       doc.querySelectorAll('script, style').forEach(el => el.remove());
-      const text = (doc.body?.textContent || '').replace(/\s+/g, ' ').trim();
+      const text = ((doc.body && doc.body.textContent) || '').replace(/\s+/g, ' ').trim();
       if (!text) continue;
       ordinal++;
-      const title =
-        doc.querySelector('h1, h2, h3')?.textContent?.replace(/\s+/g, ' ').trim()
-        || doc.querySelector('title')?.textContent?.trim()
-        || `Chapter ${ordinal}`;
+      const headingEl = doc.querySelector('h1, h2, h3');
+      const headingText = headingEl && headingEl.textContent
+        ? headingEl.textContent.replace(/\s+/g, ' ').trim() : '';
+      const titleEl = doc.querySelector('title');
+      const titleText = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
+      const title = headingText || titleText || `Chapter ${ordinal}`;
       chapters.push({ title: title.slice(0, 120), text });
     }
 

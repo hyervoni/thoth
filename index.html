@@ -9,9 +9,7 @@
 <title>Thoth</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,500&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts.css">
 <style>
   :root {
     --bg: #0a0a0a;
@@ -1112,7 +1110,7 @@
     if (!jszipPromise) {
       jszipPromise = new Promise((resolve, reject) => {
         const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+        s.src = 'jszip.min.js';
         s.onload = () => resolve(window.JSZip);
         s.onerror = () => reject(new Error('Could not load JSZip'));
         document.head.appendChild(s);
@@ -1195,6 +1193,13 @@
       epubInput.value = '';
     }
   });
+
+  // Service worker — caches app shell for full offline use after first load
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
 </script>
 </body>
 </html>

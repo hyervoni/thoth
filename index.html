@@ -44,6 +44,7 @@
     flex-direction: column;
     padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 20px);
     min-height: 100vh;
+    min-height: 100dvh;
   }
 
   /* Header */
@@ -337,6 +338,9 @@
 
   /* Controls */
   .controls {
+    width: 100%;
+    max-width: 720px;
+    align-self: center;
     padding-top: 24px;
     border-top: 1px solid var(--line-strong);
     display: flex;
@@ -557,6 +561,7 @@
     outline: 2px solid var(--accent);
     outline-offset: -4px;
   }
+  .tap-zone:active { background: rgba(231, 76, 60, 0.04); }
   .tap-zone.left { left: 0; }
   .tap-zone.right { right: 0; }
 </style>

@@ -1156,10 +1156,50 @@
       .map(ref => manifest[ref.getAttribute('idref')])
       .filter(Boolean);
 
+    // Build a map of file → chapter title from the NCX (canonical EPUB TOC).
+    // First navPoint pointing to each file wins. Falls back to per-file
+    // <h1>/<title> when the NCX has no entry (or no NCX exists).
+    const ncxTitles = {};
+    const spineEl = opfDoc.querySelector('spine');
+    const ncxId = spineEl && spineEl.getAttribute('toc');
+    const ncxHref = ncxId && manifest[ncxId];
+    if (ncxHref) {
+      const ncxFile = zip.file(opfDir + ncxHref);
+      if (ncxFile) {
+        try {
+          const ncxXml = await ncxFile.async('string');
+          const ncxDoc = new DOMParser().parseFromString(ncxXml, 'application/xml');
+          ncxDoc.querySelectorAll('navPoint').forEach(np => {
+            const labelEl = np.querySelector('navLabel > text');
+            const contentEl = np.querySelector('content');
+            const label = labelEl && labelEl.textContent ? labelEl.textContent.trim() : '';
+            const src = contentEl ? contentEl.getAttribute('src') || '' : '';
+            if (label && src) {
+              const fileOnly = decodeURIComponent(src.split('#')[0]);
+              if (!ncxTitles[fileOnly]) ncxTitles[fileOnly] = label;
+            }
+          });
+        } catch (e) { /* malformed NCX — silently fall back */ }
+      }
+    }
+
+    function isPlaceholderTitle(s) {
+      if (!s) return true;
+      const t = s.trim().toLowerCase();
+      return t.length < 2 || t === 'unknown' || t === 'untitled' || t === 'no title';
+    }
+    function decodeNumericEntities(s) {
+      if (!s || s.indexOf('&#') === -1) return s;
+      return s
+        .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
+        .replace(/&#x([\da-fA-F]+);/g, (_, n) => String.fromCharCode(parseInt(n, 16)));
+    }
+
     const chapters = [];
     let ordinal = 0;
     for (const href of spineRefs) {
-      const path = opfDir + decodeURIComponent(href.split('#')[0]);
+      const fileOnly = decodeURIComponent(href.split('#')[0]);
+      const path = opfDir + fileOnly;
       const f = zip.file(path);
       if (!f) continue;
       const xhtml = await f.async('string');
@@ -1168,12 +1208,19 @@
       const text = ((doc.body && doc.body.textContent) || '').replace(/\s+/g, ' ').trim();
       if (!text) continue;
       ordinal++;
+
+      const ncxLabel = ncxTitles[fileOnly] || '';
       const headingEl = doc.querySelector('h1, h2, h3');
-      const headingText = headingEl && headingEl.textContent
+      const headingRaw = headingEl && headingEl.textContent
         ? headingEl.textContent.replace(/\s+/g, ' ').trim() : '';
       const titleEl = doc.querySelector('title');
-      const titleText = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
-      const title = headingText || titleText || `Chapter ${ordinal}`;
+      const titleRaw = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
+      const headingText = decodeNumericEntities(isPlaceholderTitle(headingRaw) ? '' : headingRaw);
+      const titleText = decodeNumericEntities(isPlaceholderTitle(titleRaw) ? '' : titleRaw);
+
+      // Priority: NCX label → longer of (heading, title) → ordinal fallback
+      const docTitle = titleText.length > headingText.length ? titleText : headingText;
+      const title = ncxLabel || docTitle || `Chapter ${ordinal}`;
       chapters.push({ title: title.slice(0, 120), text });
     }
 

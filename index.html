@@ -204,6 +204,7 @@
   /* TOC panel */
   .toc-list {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     margin: -4px;
@@ -451,13 +452,17 @@
   /* Text input panel */
   .panel {
     position: fixed;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     background: var(--paper);
     z-index: 100;
     display: none;
     flex-direction: column;
     padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 20px);
     animation: slideUp 0.3s ease;
+    -webkit-overflow-scrolling: touch;
   }
   .panel.open { display: flex; }
   @keyframes slideUp {
@@ -492,6 +497,7 @@
   }
   textarea {
     flex: 1;
+    min-height: 0;
     width: 100%;
     border: 1px solid var(--line-strong);
     background: var(--bg);

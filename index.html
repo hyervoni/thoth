@@ -948,6 +948,13 @@
     if (e.code === 'Escape' && document.body.classList.contains('focus-mode')) toggleFocusMode();
   });
 
+  // Auto-pause when the tab is hidden (app switch, lock screen, other tab).
+  // Don't auto-resume on return — let the user tap to continue, so the word
+  // they last saw stays visible while they get re-oriented.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && playing) stop();
+  });
+
   // Re-center on resize
   window.addEventListener('resize', () => {
     if (words[cursor - 1]) renderWord(words[cursor - 1]);

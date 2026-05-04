@@ -554,7 +554,6 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 25%;
     z-index: 5;
     cursor: pointer;
     background: transparent;
@@ -568,9 +567,23 @@
     outline-offset: -4px;
   }
   .tap-zone:active { background: rgba(231, 76, 60, 0.04); }
-  .tap-zone.left { left: 0; }
-  .tap-zone.right { right: 0; }
-  .tap-zone.center { left: 25%; width: 50%; }
+  /* Align tap zones with the word frame (max-width: 720px, centered) so the
+     middle stays clickable for focus toggle even on wide screens. On narrow
+     viewports the calc resolves below 25%, so the max() keeps the original
+     phone behavior. */
+  .tap-zone.left {
+    left: 0;
+    width: max(25%, calc(50% - 360px));
+  }
+  .tap-zone.right {
+    right: 0;
+    width: max(25%, calc(50% - 360px));
+  }
+  .tap-zone.center {
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(50%, 720px);
+  }
 
   /* Focus mode — hide everything except the word and progress bar */
   body.focus-mode .controls,
@@ -1168,6 +1181,20 @@
     const opfDoc = new DOMParser().parseFromString(opfXml, 'application/xml');
     const opfDir = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
 
+    // Resolve a path relative to a base dir to an absolute path within the ZIP.
+    // Handles `..` and `.` segments — needed when NCX and OPF live in
+    // different directories and NCX content[src] uses `../` to reach
+    // chapter files relative to the NCX rather than the OPF.
+    function resolvePath(baseDir, relative) {
+      const segs = (baseDir + relative).split('/');
+      const out = [];
+      for (const s of segs) {
+        if (s === '..') out.pop();
+        else if (s !== '' && s !== '.') out.push(s);
+      }
+      return out.join('/');
+    }
+
     const titleEl = opfDoc.querySelector('metadata > [*|title], metadata > title');
     const bookTitle =
       (titleEl && titleEl.textContent ? titleEl.textContent.trim() : '')
@@ -1190,7 +1217,9 @@
     const ncxId = spineEl && spineEl.getAttribute('toc');
     const ncxHref = ncxId && manifest[ncxId];
     if (ncxHref) {
-      const ncxFile = zip.file(opfDir + ncxHref);
+      const ncxPath = resolvePath(opfDir, ncxHref);
+      const ncxDir = ncxPath.includes('/') ? ncxPath.substring(0, ncxPath.lastIndexOf('/') + 1) : '';
+      const ncxFile = zip.file(ncxPath);
       if (ncxFile) {
         try {
           const ncxXml = await ncxFile.async('string');
@@ -1201,8 +1230,10 @@
             const label = labelEl && labelEl.textContent ? labelEl.textContent.trim() : '';
             const src = contentEl ? contentEl.getAttribute('src') || '' : '';
             if (label && src) {
-              const fileOnly = decodeURIComponent(src.split('#')[0]);
-              if (!ncxTitles[fileOnly]) ncxTitles[fileOnly] = label;
+              // Resolve NCX-relative src to absolute path within the ZIP so the
+              // key matches what the spine loop computes for each file.
+              const absPath = resolvePath(ncxDir, decodeURIComponent(src.split('#')[0]));
+              if (!ncxTitles[absPath]) ncxTitles[absPath] = label;
             }
           });
         } catch (e) { /* malformed NCX — silently fall back */ }
@@ -1244,7 +1275,7 @@
     let ordinal = 0;
     for (const href of spineRefs) {
       const fileOnly = decodeURIComponent(href.split('#')[0]);
-      const path = opfDir + fileOnly;
+      const path = resolvePath(opfDir, fileOnly);
       const f = zip.file(path);
       if (!f) continue;
       const xhtml = await f.async('string');
@@ -1254,7 +1285,7 @@
       if (!text) continue;
       ordinal++;
 
-      const ncxLabel = ncxTitles[fileOnly] || '';
+      const ncxLabel = ncxTitles[path] || '';
 
       if (hasNcx) {
         if (ncxLabel) {
@@ -1280,14 +1311,15 @@
   }
 
   epubBtn.addEventListener('click', () => epubInput.click());
-  const MAX_EPUB_SIZE = 100 * 1024 * 1024; // 100 MB — guards against IndexedDB quota errors
+  const MAX_EPUB_MB = 100; // guards against IndexedDB quota errors
+  const MAX_EPUB_SIZE = MAX_EPUB_MB * 1024 * 1024;
 
   epubInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > MAX_EPUB_SIZE) {
       const sizeMb = (file.size / 1024 / 1024).toFixed(1);
-      alert('File too large (' + sizeMb + ' MB). Max supported: 100 MB.');
+      alert('File too large (' + sizeMb + ' MB). Max supported: ' + MAX_EPUB_MB + ' MB.');
       epubInput.value = '';
       return;
     }

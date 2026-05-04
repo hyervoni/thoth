@@ -1201,7 +1201,26 @@
         .replace(/&#x([\da-fA-F]+);/g, (_, n) => String.fromCharCode(parseInt(n, 16)));
     }
 
+    function fallbackTitleFor(doc, ordinal) {
+      const headingEl = doc.querySelector('h1, h2, h3');
+      const headingRaw = headingEl && headingEl.textContent
+        ? headingEl.textContent.replace(/\s+/g, ' ').trim() : '';
+      const titleEl = doc.querySelector('title');
+      const titleRaw = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
+      const headingText = decodeNumericEntities(isPlaceholderTitle(headingRaw) ? '' : headingRaw);
+      const titleText = decodeNumericEntities(isPlaceholderTitle(titleRaw) ? '' : titleRaw);
+      return (titleText.length > headingText.length ? titleText : headingText)
+        || `Chapter ${ordinal}`;
+    }
+
+    // When the NCX is present, group consecutive spine files under the same
+    // chapter: each NCX entry begins a new chapter; files between are appended
+    // to the previous chapter's text. This collapses Calibre's per-page splits
+    // (e.g. 40 separate "notas" files) into one logical chapter that matches
+    // the book's printed structure.
+    const hasNcx = Object.keys(ncxTitles).length > 0;
     const chapters = [];
+    let currentChapter = null;
     let ordinal = 0;
     for (const href of spineRefs) {
       const fileOnly = decodeURIComponent(href.split('#')[0]);
@@ -1216,18 +1235,24 @@
       ordinal++;
 
       const ncxLabel = ncxTitles[fileOnly] || '';
-      const headingEl = doc.querySelector('h1, h2, h3');
-      const headingRaw = headingEl && headingEl.textContent
-        ? headingEl.textContent.replace(/\s+/g, ' ').trim() : '';
-      const titleEl = doc.querySelector('title');
-      const titleRaw = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
-      const headingText = decodeNumericEntities(isPlaceholderTitle(headingRaw) ? '' : headingRaw);
-      const titleText = decodeNumericEntities(isPlaceholderTitle(titleRaw) ? '' : titleRaw);
 
-      // Priority: NCX label → longer of (heading, title) → ordinal fallback
-      const docTitle = titleText.length > headingText.length ? titleText : headingText;
-      const title = ncxLabel || docTitle || `Chapter ${ordinal}`;
-      chapters.push({ title: title.slice(0, 120), text });
+      if (hasNcx) {
+        if (ncxLabel) {
+          currentChapter = { title: ncxLabel.slice(0, 120), text };
+          chapters.push(currentChapter);
+        } else if (currentChapter) {
+          currentChapter.text += ' ' + text;
+        } else {
+          // Front matter before the first NCX entry — give it its own chapter
+          const title = fallbackTitleFor(doc, chapters.length + 1);
+          currentChapter = { title: title.slice(0, 120), text };
+          chapters.push(currentChapter);
+        }
+      } else {
+        // No NCX — every spine file is its own chapter
+        const title = ncxLabel || fallbackTitleFor(doc, ordinal);
+        chapters.push({ title: title.slice(0, 120), text });
+      }
     }
 
     if (!chapters.length) throw new Error('No readable text found');

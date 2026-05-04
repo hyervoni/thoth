@@ -108,7 +108,11 @@
   .word {
     font-family: 'Newsreader', Georgia, serif;
     font-weight: 500;
-    font-size: min(72px, max(40px, 7vw));
+    /* Adaptive floor: shrinks from 40px down to 28px on narrow phones so
+       4-syllable words like "computadora" or "investigación" fit with ORP
+       intact. Above ~500px viewport the floor locks at 40 and behavior is
+       the same as before. */
+    font-size: min(72px, max(min(40px, max(28px, 8vw)), 7vw));
     letter-spacing: -0.005em;
     font-variation-settings: "opsz" 72;
     white-space: nowrap;
@@ -589,7 +593,9 @@
   body.focus-mode .controls,
   body.focus-mode .progress-label { display: none; }
   body.focus-mode .word {
-    font-size: min(96px, max(48px, 9vw));
+    /* Same adaptive pattern as the regular word, scaled ~+25%: floor 36→48,
+       ideal 9vw, cap 96. */
+    font-size: min(96px, max(min(48px, max(36px, 10vw)), 9vw));
   }
 </style>
 </head>

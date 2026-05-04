@@ -602,7 +602,7 @@
 
 <div class="stage">
   <button class="tap-zone left" id="tapLeft" aria-label="Skip back" type="button"></button>
-  <button class="tap-zone right" id="tapRight" aria-label="Skip forward" type="button"></button>
+  <button class="tap-zone right" id="tapRight" aria-label="Play or pause" type="button"></button>
   <button class="tap-zone center" id="tapCenter" aria-label="Toggle focus mode" type="button"></button>
 
   <div class="word-frame">
@@ -928,11 +928,7 @@
   });
   tapRight.addEventListener('click', () => {
     if (!words.length) return;
-    stop();
-    cursor = Math.min(words.length - 1, cursor + 4);
-    renderWord(words[cursor]);
-    updateUI();
-    persistProgress();
+    playing ? stop() : play();
   });
 
   // Tap center to toggle focus mode (hides controls, larger type)

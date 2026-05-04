@@ -744,13 +744,27 @@
       '<span class="pivot">' + escapeHtml(pivot) + '</span>' +
       '<span class="right">' + escapeHtml(right) + '</span>';
 
-    // Align pivot character to center of frame
+    // Align pivot character to center of frame, but clamp the offset so the
+    // word never extends past the .word-frame edges (otherwise body's
+    // overflow:hidden clips the right side on narrow viewports for long
+    // words like "computadora" or "responsabilidad").
     const pivotEl = wordEl.querySelector('.pivot');
     const wordRect = wordEl.getBoundingClientRect();
     const pivotRect = pivotEl.getBoundingClientRect();
+    const frameRect = wordEl.parentElement.getBoundingClientRect();
     const pivotCenter = pivotRect.left + pivotRect.width / 2;
-    const frameCenter = wordRect.left + wordRect.width / 2;
-    const offset = frameCenter - pivotCenter;
+    const wordCenter = wordRect.left + wordRect.width / 2;
+    let offset = wordCenter - pivotCenter;
+
+    const slack = (frameRect.width - wordRect.width) / 2;
+    if (slack >= 0) {
+      // Word fits — apply ORP offset, clamped so word stays within frame
+      offset = Math.max(-slack, Math.min(slack, offset));
+    } else {
+      // Word wider than frame — center it (symmetric overflow beats clipped
+      // ORP overflow); accept that the pivot won't sit at the frame center
+      offset = 0;
+    }
     wordEl.style.transform = 'translateX(' + offset + 'px)';
   }
 

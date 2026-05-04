@@ -570,6 +570,14 @@
   .tap-zone:active { background: rgba(231, 76, 60, 0.04); }
   .tap-zone.left { left: 0; }
   .tap-zone.right { right: 0; }
+  .tap-zone.center { left: 25%; width: 50%; }
+
+  /* Focus mode — hide everything except the word and progress bar */
+  body.focus-mode .controls,
+  body.focus-mode .progress-label { display: none; }
+  body.focus-mode .word {
+    font-size: min(96px, max(48px, 9vw));
+  }
 </style>
 </head>
 <body>
@@ -582,6 +590,7 @@
 <div class="stage">
   <button class="tap-zone left" id="tapLeft" aria-label="Skip back" type="button"></button>
   <button class="tap-zone right" id="tapRight" aria-label="Skip forward" type="button"></button>
+  <button class="tap-zone center" id="tapCenter" aria-label="Toggle focus mode" type="button"></button>
 
   <div class="word-frame">
     <div class="word" id="word">
@@ -681,6 +690,7 @@
   const sampleBtn = document.getElementById('sampleBtn');
   const tapLeft = document.getElementById('tapLeft');
   const tapRight = document.getElementById('tapRight');
+  const tapCenter = document.getElementById('tapCenter');
   const epubBtn = document.getElementById('epubBtn');
   const epubInput = document.getElementById('epubInput');
   const chapterBar = document.getElementById('chapterBar');
@@ -912,11 +922,21 @@
     persistProgress();
   });
 
+  // Tap center to toggle focus mode (hides controls, larger type)
+  function toggleFocusMode() {
+    document.body.classList.toggle('focus-mode');
+    // Re-render so the pivot stays centered after the font-size change
+    if (words[cursor - 1]) renderWord(words[cursor - 1]);
+    else if (words[0]) renderWord(words[0]);
+  }
+  tapCenter.addEventListener('click', toggleFocusMode);
+
   // Keyboard support
   document.addEventListener('keydown', e => {
     if (panel.classList.contains('open') || tocPanel.classList.contains('open')) return;
     if (e.code === 'Space') { e.preventDefault(); playing ? stop() : play(); }
     if (e.code === 'ArrowLeft') rewindBtn.click();
+    if (e.code === 'Escape' && document.body.classList.contains('focus-mode')) toggleFocusMode();
   });
 
   // Re-center on resize

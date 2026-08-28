@@ -737,6 +737,7 @@
   function renderWord(w) {
     if (!w) {
       wordEl.innerHTML = '<span class="empty-hint">end of text</span>';
+      wordEl.style.transform = 'translateX(0)';
       return;
     }
     const p = pivotIndex(w);
@@ -1048,7 +1049,7 @@
 
   function renderBookmarks() {
     addBookmarkBtn.disabled =
-      !words.length || bookmarks.some(b => b.index === cursor);
+      !words.length || !currentRow || bookmarks.some(b => b.index === cursor);
     bookmarkList.innerHTML = '';
     if (!bookmarks.length) {
       const empty = document.createElement('div');
@@ -1104,6 +1105,7 @@
     currentRow = null;
     chapterBar.classList.remove('visible');
     wordEl.innerHTML = '<span class="empty-hint">import an epub<br>to begin</span>';
+    wordEl.style.transform = 'translateX(0)';
     playBtn.textContent = 'Start';
     updateUI();
   }

@@ -12,13 +12,22 @@
 <link rel="stylesheet" href="fonts.css">
 <style>
   :root {
-    --bg: #0a0a0a;
-    --ink: #f0ece4;
-    --ink-soft: #a39a8c;
-    --accent: #e74c3c;
-    --line: #3a342b;
-    --line-strong: #5a5043;
-    --paper: #1a1714;
+    --bg: #0b0a09;
+    --ink: #f2eee6;
+    --ink-soft: #9c9284;
+    --ink-dim: #6e655a;
+    /* Accent for rules and marks. The pivot letter is deliberately NOT this
+       colour: at 4.55:1 against --bg it was the dimmest thing on screen,
+       while the letters around it sit at 17:1. --pivot restores 5.87:1. */
+    --accent: #d8453a;
+    --accent-soft: #6d2b25;
+    --pivot: #ef5a4a;
+    --line: #241f1a;
+    --line-row: #2a241d;
+    --line-rule: #322b23;
+    --line-panel: #3a3229;
+    --line-btn: #4a4238;
+    --paper: #17130f;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   button, input, textarea {
@@ -42,9 +51,20 @@
   body {
     display: flex;
     flex-direction: column;
-    padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 20px);
+    /* max(), not the env() fallback: a browser that supports env() but has
+       no inset resolves it to 0, so the fallback never applies and the
+       bottom padding collapsed on Android and desktop. */
+    padding: max(env(safe-area-inset-top), 20px) 24px max(env(safe-area-inset-bottom), 20px);
     min-height: 100vh;
     min-height: 100dvh;
+    /* Paper ground: a vignette lit from above plus fine grain. Both ride as
+       background layers on body rather than an overlay element, so nothing
+       has to be stacked above them. Grain alpha is baked into the SVG. */
+    background-color: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"), radial-gradient(130% 70% at 50% -10%, #17130e 0%, #0b0a09 62%);
+    background-repeat: repeat, no-repeat;
+    background-size: 140px 140px, 100% 100%;
+    background-attachment: fixed, fixed;
   }
 
   /* Header */
@@ -52,22 +72,47 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 12px 4px 20px;
-    border-bottom: 1px solid var(--line-strong);
+    gap: 12px;
+    padding: 10px 0 16px;
+    border-bottom: 1px solid var(--line-rule);
+    flex-shrink: 0;
   }
   .logo {
+    display: flex;
+    align-items: center;
+    gap: 9px;
     font-weight: 700;
-    font-size: 18px;
+    font-size: 19px;
     letter-spacing: -0.02em;
     font-variation-settings: "opsz" 144;
   }
-  .logo span { color: var(--accent); font-style: italic; }
+  .logo svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    display: block;
+  }
+  .logo-dot {
+    width: 3px;
+    height: 3px;
+    background: var(--accent);
+    align-self: flex-end;
+    margin-bottom: 4px;
+  }
   .stats {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--ink-soft);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Reader stage */
@@ -91,30 +136,55 @@
     justify-content: center;
   }
 
-  /* The two horizontal guide marks */
+  /* Page hairlines: the top and bottom edges of the reading field. */
   .word-frame::before,
   .word-frame::after {
     content: '';
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 14px;
-    height: 1.5px;
-    background: var(--accent);
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--line);
   }
-  .word-frame::before { top: 28px; }
-  .word-frame::after { bottom: 28px; }
+  .word-frame::before { top: 0; }
+  .word-frame::after { bottom: 0; }
+
+  /* Fixation strokes. They mark the ORP column, so they run along it: a
+     horizontal bar is ambiguous about which column it points at. They stop
+     clear of the ascenders and descenders rather than crossing the text,
+     and fade outward so the strongest part sits nearest the word. Dimmer
+     than the pivot on purpose — this is furniture, not the target. */
+  .guide {
+    position: absolute;
+    left: 50%;
+    margin-left: -1px;
+    width: 2px;
+    height: 40px;
+    pointer-events: none;
+  }
+  .guide-top {
+    top: 26px;
+    background: linear-gradient(to bottom, rgba(216, 69, 58, 0) 0%, rgba(216, 69, 58, 0.55) 100%);
+  }
+  .guide-bottom {
+    bottom: 26px;
+    background: linear-gradient(to top, rgba(216, 69, 58, 0) 0%, rgba(216, 69, 58, 0.55) 100%);
+  }
 
   .word {
     font-family: 'Newsreader', Georgia, serif;
     font-weight: 500;
-    /* Adaptive floor: shrinks from 40px down to 28px on narrow phones so
+    /* Adaptive floor: shrinks from 46px down to 32px on narrow phones so
        4-syllable words like "computadora" or "investigación" fit with ORP
-       intact. Above ~500px viewport the floor locks at 40 and behavior is
-       the same as before. */
-    font-size: min(72px, max(min(40px, max(28px, 8vw)), 7vw));
-    letter-spacing: -0.005em;
-    font-variation-settings: "opsz" 72;
+       intact. Caps at 72 on desktop. min/max rather than clamp() — clamp
+       is not in Safari 12. */
+    font-size: min(72px, max(min(46px, max(32px, 11vw)), 9vw));
+    /* opsz 20, not the display end of the axis. RSVP recognises a word in
+       about 170ms, so sturdy strokes beat fine ones; in Newsreader the text
+       cut is also narrower, which buys room on a phone. Positive tracking
+       for the same reason: crowding is what limits recognition at speed. */
+    letter-spacing: 0.012em;
+    font-variation-settings: "opsz" 20;
     white-space: nowrap;
     position: relative;
   }
@@ -122,24 +192,19 @@
     color: var(--ink);
   }
   .word .pivot {
-    color: var(--accent);
+    color: var(--pivot);
   }
   .word .right {
     color: var(--ink);
-  }
-  .word .pivot-anchor {
-    position: absolute;
-    left: 50%;
-    width: 0;
   }
 
   /* Progress bar */
   .progress {
     width: 100%;
     max-width: 720px;
-    height: 3px;
-    background: var(--line-strong);
-    margin-top: 32px;
+    height: 2px;
+    background: var(--line);
+    margin-top: 34px;
     position: relative;
     overflow: hidden;
   }
@@ -151,23 +216,30 @@
   }
 
   .progress-label {
-    margin-top: 12px;
+    width: 100%;
+    max-width: 720px;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
     color: var(--ink-soft);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
   }
+  .progress-label .pct { color: var(--ink); }
 
   /* Chapter bar — sits above the velocity slider, only when book has TOC */
   .chapter-bar {
     width: 100%;
     display: none;
     flex-direction: column;
-    gap: 3px;
-    padding: 4px 0 10px;
+    gap: 5px;
+    padding: 0 0 0 14px;
     background: transparent;
     border: none;
+    border-left: 2px solid var(--accent-soft);
     cursor: pointer;
     text-align: left;
     transition: opacity 0.2s;
@@ -181,9 +253,9 @@
     align-items: baseline;
     gap: 12px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
+    font-size: 9.5px;
     color: var(--ink-soft);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
   }
   .book-title-text {
@@ -197,7 +269,7 @@
   .chapter-title-text {
     font-family: 'Fraunces', serif;
     font-style: italic;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 500;
     color: var(--ink);
     overflow: hidden;
@@ -219,8 +291,8 @@
     text-align: left;
     background: transparent;
     border: none;
-    border-bottom: 1px solid var(--line);
-    padding: 18px 4px;
+    border-bottom: 1px solid var(--line-row);
+    padding: 18px 0;
     cursor: pointer;
     display: flex;
     align-items: baseline;
@@ -260,7 +332,8 @@
     background: var(--ink);
     color: var(--paper);
     border: none;
-    padding: 18px 24px;
+    height: 56px;
+    padding: 0 24px;
     font-family: 'Fraunces', serif;
     font-size: 16px;
     font-weight: 500;
@@ -277,13 +350,13 @@
   .add-bookmark-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
-    background: var(--line-strong);
+    background: var(--line-btn);
     color: var(--ink-soft);
   }
   .bookmark-row {
     display: flex;
     align-items: stretch;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--line-row);
   }
   .bookmark-row:hover { background: rgba(255, 255, 255, 0.03); }
   .bookmark-item {
@@ -317,17 +390,29 @@
     flex-shrink: 0;
   }
   .bookmark-item .icon {
-    font-size: 16px;
+    display: flex;
+    align-items: center;
     flex-shrink: 0;
-    opacity: 0.85;
+    color: var(--ink-dim);
+  }
+  .bookmark-item .icon svg,
+  .bookmark-delete svg {
+    width: 15px;
+    height: 15px;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
   .bookmark-delete {
+    display: flex;
+    align-items: center;
     background: transparent;
     border: none;
-    padding: 0 18px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 16px;
-    color: var(--ink-soft);
+    padding: 0 16px;
+    color: var(--ink-dim);
     cursor: pointer;
     transition: color 0.15s;
   }
@@ -366,11 +451,12 @@
     width: 100%;
     max-width: 720px;
     align-self: center;
-    padding-top: 24px;
-    border-top: 1px solid var(--line-strong);
+    padding-top: 22px;
+    border-top: 1px solid var(--line-rule);
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 18px;
+    flex-shrink: 0;
   }
 
   .row {
@@ -378,19 +464,18 @@
     align-items: center;
     gap: 8px;
   }
-  .row .play-btn { padding: 18px 16px; }
-  .row .icon-btn { width: 52px; height: 52px; }
 
   .play-btn {
     flex: 1;
+    height: 56px;
     background: var(--ink);
     color: var(--paper);
     border: none;
-    padding: 18px 24px;
+    padding: 0 16px;
     font-family: 'Fraunces', serif;
     font-size: 17px;
     font-weight: 500;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
     cursor: pointer;
     transition: transform 0.15s, background 0.15s;
     border-radius: 0;
@@ -400,76 +485,108 @@
   .icon-btn {
     width: 56px;
     height: 56px;
+    flex-shrink: 0;
     background: transparent;
-    border: 1px solid var(--ink);
+    border: 1px solid var(--line-btn);
     color: var(--ink);
     cursor: pointer;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    font-weight: 600;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
   }
-  .icon-btn:active { background: var(--ink); color: var(--paper); }
+  .icon-btn:active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+
+  /* One drawn icon set, stroked in currentColor so the :active inversion
+     carries the glyph with it. Replaces the emoji / guillemet / LOAD mix. */
+  .icon-btn svg,
+  .add-bookmark-btn svg,
+  .close-btn svg,
+  .sample-btn svg {
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .close-btn svg { width: 13px; height: 13px; stroke-width: 1.8; }
 
   .speed-control {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .speed-head {
+    display: flex;
+    align-items: baseline;
     justify-content: space-between;
-    gap: 16px;
-    padding: 8px 0;
+    gap: 12px;
   }
   .speed-label {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--ink-soft);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    min-width: 60px;
   }
   .speed-value {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
     font-family: 'Fraunces', serif;
-    font-size: 28px;
-    font-weight: 700;
+    font-size: 34px;
+    font-weight: 300;
     font-variation-settings: "opsz" 144;
-    min-width: 90px;
-    text-align: center;
+    letter-spacing: -0.01em;
   }
   .speed-value small {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 400;
     color: var(--ink-soft);
-    letter-spacing: 0.1em;
-    display: block;
-    margin-top: -4px;
+    letter-spacing: 0.16em;
   }
   input[type="range"] {
-    flex: 1;
+    width: 100%;
     -webkit-appearance: none;
     appearance: none;
-    height: 3px;
-    background: var(--line-strong);
-    border-radius: 2px;
+    /* The 24px is hit area, not rule: the visible track is the 1px
+       pseudo-element below. The old input was 3px tall, so the draggable
+       zone was 3px tall too. */
+    height: 24px;
+    margin: 0;
+    background: transparent;
     outline: none;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 1px;
+    background: var(--line-btn);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 1px;
+    background: var(--line-btn);
   }
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 22px;
-    height: 22px;
+    width: 16px;
+    height: 16px;
+    margin-top: -7.5px;
     background: var(--accent);
     cursor: pointer;
-    border-radius: 50%;
+    border-radius: 0;
   }
   input[type="range"]::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
+    width: 16px;
+    height: 16px;
     background: var(--accent);
     cursor: pointer;
-    border-radius: 50%;
+    border-radius: 0;
     border: none;
   }
 
@@ -480,11 +597,17 @@
     right: 0;
     bottom: 0;
     left: 0;
-    background: var(--paper);
+    background-color: var(--paper);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"), radial-gradient(120% 60% at 50% 0%, #221c16 0%, #17130f 66%);
+    background-repeat: repeat, no-repeat;
+    background-size: 140px 140px, 100% 100%;
     z-index: 100;
     display: none;
     flex-direction: column;
-    padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 20px);
+    /* max(), not the env() fallback: a browser that supports env() but has
+       no inset resolves it to 0, so the fallback never applies and the
+       bottom padding collapsed on Android and desktop. */
+    padding: max(env(safe-area-inset-top), 20px) 24px max(env(safe-area-inset-bottom), 20px);
     animation: slideUp 0.3s ease;
     -webkit-overflow-scrolling: touch;
   }
@@ -497,28 +620,32 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 12px 4px 20px;
-    border-bottom: 1px solid var(--line-strong);
+    padding: 10px 0 18px;
+    border-bottom: 1px solid var(--line-panel);
     margin-bottom: 20px;
   }
   .panel-title {
     font-family: 'Fraunces', serif;
-    font-size: 22px;
+    font-size: 23px;
     font-weight: 700;
     font-style: italic;
     font-variation-settings: "opsz" 144;
   }
   .close-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     background: transparent;
     border: none;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: var(--ink);
+    font-size: 10px;
+    color: var(--ink-soft);
     cursor: pointer;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    padding: 8px 12px;
+    padding: 8px 0 8px 12px;
   }
+  .close-btn:active { color: var(--ink); }
   .panel-actions {
     display: flex;
     flex-direction: column;
@@ -531,27 +658,91 @@
   }
   .panel-actions .import-row > * { flex: 1; }
   .sample-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    height: 56px;
     background: transparent;
-    border: 1px solid var(--ink);
-    padding: 18px 24px;
+    border: 1px solid var(--line-btn);
+    padding: 0 18px;
     font-family: 'Fraunces', serif;
     font-size: 14px;
     font-style: italic;
+    font-weight: 500;
     color: var(--ink);
     cursor: pointer;
     transition: background 0.15s, color 0.15s, opacity 0.15s;
   }
-  .sample-btn:active { background: var(--ink); color: var(--paper); }
+  .sample-btn:active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  /* Import is the reason the panel exists; the sample is the way out of an
+     empty library. Only one of them is filled. */
+  .sample-btn.primary {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+    font-style: normal;
+    font-size: 15px;
+  }
+  .sample-btn.primary:active { background: var(--accent); border-color: var(--accent); }
+  .panel-actions .import-row > .sample-btn.primary { flex: 1.4; }
   .sample-btn:disabled { opacity: 0.5; cursor: wait; }
 
   /* Empty state */
   .empty-hint {
-    color: var(--ink-soft);
-    font-style: italic;
-    font-size: min(28px, max(20px, 3.5vw));
-    font-weight: 300;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    white-space: normal;
+    letter-spacing: 0;
+    font-variation-settings: "opsz" 144;
     text-align: center;
   }
+  .empty-hint svg {
+    width: 52px;
+    height: 52px;
+    fill: none;
+    stroke: #3a332b;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .empty-hint .line-1 {
+    color: var(--ink-soft);
+    font-style: italic;
+    font-weight: 300;
+    font-size: min(26px, max(20px, 3.5vw));
+  }
+  .empty-hint .line-2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-style: normal;
+    color: var(--ink-dim);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  /* No book loaded: Start does nothing, so it steps back and Library
+     becomes the one filled control. */
+  body.no-book .play-btn {
+    background: transparent;
+    border: 1px solid var(--line-row);
+    color: var(--line-btn);
+  }
+  body.no-book .icon-btn {
+    border-color: var(--line-row);
+    color: var(--line-btn);
+  }
+  body.no-book #textBtn {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+  body.no-book .guide { display: none; }
+  body.no-book .speed-value { color: var(--ink-dim); }
+  body.no-book input[type="range"]::-webkit-slider-thumb { background: var(--line-btn); }
+  body.no-book input[type="range"]::-moz-range-thumb { background: var(--line-btn); }
 
   /* Tap zones for navigation */
   .tap-zone {
@@ -589,22 +780,57 @@
     width: min(50%, 720px);
   }
 
-  /* Focus mode — hide everything except the word and progress bar */
+  /* Focus mode — the word, its two strokes, and a rule at the screen edge */
+  body.focus-mode header,
   body.focus-mode .controls,
   body.focus-mode .progress-label { display: none; }
+  body.focus-mode .word-frame::before,
+  body.focus-mode .word-frame::after { display: none; }
+  body.focus-mode .guide { height: 28px; }
+  body.focus-mode .guide-top { top: 22px; }
+  body.focus-mode .guide-bottom { bottom: 22px; }
   body.focus-mode .word {
-    /* Same adaptive pattern as the regular word, scaled ~+25%: floor 36→48,
-       ideal 9vw, cap 96. */
-    font-size: min(96px, max(min(48px, max(36px, 10vw)), 9vw));
+    /* Same adaptive pattern as the regular word, scaled up: floor 44→64,
+       ideal 12vw, cap 96. */
+    font-size: min(96px, max(min(64px, max(44px, 14vw)), 12vw));
+  }
+  body.focus-mode .progress {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-width: none;
+    margin-top: 0;
+  }
+
+  /* Short viewports (small phones, landscape): the header costs vertical
+     room, so give some back before the stage starts clipping. */
+  @media (max-height: 700px) {
+    header { padding: 6px 0 12px; }
+    .word-frame { height: 168px; }
+    .guide { height: 30px; }
+    .guide-top { top: 20px; }
+    .guide-bottom { bottom: 20px; }
+    .progress { margin-top: 24px; }
+    .controls { padding-top: 16px; gap: 14px; }
   }
 </style>
 </head>
-<body>
+<body class="no-book">
 
-<!-- <header>
-  <div class="logo">Speed<span>Reader</span></div>
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20.5 3.5C10.5 6 5.5 12 4 20.5"/>
+      <path d="M20.5 3.5c1.2 7.2-2 12.2-8.2 13.4l-4.3.9"/>
+      <path d="M13.6 6.4c-2.1 3-3.2 6.3-3.4 9.6"/>
+    </svg>
+    <span>Thoth</span>
+    <span class="logo-dot"></span>
+  </div>
   <div class="stats" id="stats">— · —</div>
-</header> -->
+</header>
 
 <div class="stage">
   <button class="tap-zone left" id="tapLeft" aria-label="Skip back" type="button"></button>
@@ -612,15 +838,28 @@
   <button class="tap-zone center" id="tapCenter" aria-label="Toggle focus mode" type="button"></button>
 
   <div class="word-frame">
+    <div class="guide guide-top"></div>
+    <div class="guide guide-bottom"></div>
     <div class="word" id="word">
-      <span class="empty-hint">import an epub<br>to begin</span>
+      <span class="empty-hint">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M24 12c-4-3-9-4-15-4v28c6 0 11 1 15 4"/>
+          <path d="M24 12c4-3 9-4 15-4v28c-6 0-11 1-15 4"/>
+          <path d="M24 12v28"/>
+        </svg>
+        <span class="line-1">Nothing to read yet</span>
+        <span class="line-2">Import an epub to begin</span>
+      </span>
     </div>
   </div>
 
   <div class="progress">
     <div class="progress-fill" id="progressFill"></div>
   </div>
-  <div class="progress-label" id="progressLabel">0 / 0</div>
+  <div class="progress-label">
+    <span id="progressCount">0 / 0</span>
+    <span class="pct" id="progressPct">0%</span>
+  </div>
 </div>
 
 <div class="controls">
@@ -633,31 +872,33 @@
   </button>
 
   <div class="speed-control">
-    <span class="speed-label">Speed</span>
-    <input type="range" id="speed" min="150" max="800" step="25" value="350">
-    <div class="speed-value">
-      <span id="speedNum">350</span>
-      <small>WPM</small>
+    <div class="speed-head">
+      <span class="speed-label">Speed</span>
+      <div class="speed-value">
+        <span id="speedNum">350</span>
+        <small>WPM</small>
+      </div>
     </div>
+    <input type="range" id="speed" min="150" max="800" step="25" value="350" aria-label="Reading speed, words per minute">
   </div>
 
   <div class="row">
-    <button class="icon-btn" id="rewindBtn" aria-label="Rewind">‹‹</button>
+    <button class="icon-btn" id="rewindBtn" aria-label="Rewind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5.5 4.5 12 11 18.5"/><path d="M19.5 5.5 13 12l6.5 6.5"/></svg></button>
     <button class="play-btn" id="playBtn">Start</button>
-    <button class="icon-btn" id="bookmarkBtn" aria-label="Bookmarks">🔖</button>
-    <button class="icon-btn" id="textBtn" aria-label="Library">LOAD</button>
+    <button class="icon-btn" id="bookmarkBtn" aria-label="Bookmarks"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z"/></svg></button>
+    <button class="icon-btn" id="textBtn" aria-label="Library"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 4.5h4v15h-4z"/><path d="M9.5 4.5h4v15h-4z"/><path d="M16.2 5.4l3.9 1-3.2 14.1-3.9-1z"/></svg></button>
   </div>
 </div>
 
 <div class="panel" id="panel">
   <div class="panel-header">
     <div class="panel-title">Library</div>
-    <button class="close-btn" id="closePanelBtn">Close ✕</button>
+    <button class="close-btn" id="closePanelBtn" aria-label="Close library">Close<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></svg></button>
   </div>
   <div class="toc-list" id="libraryList"></div>
   <div class="panel-actions">
     <div class="import-row">
-      <button class="sample-btn" id="epubBtn">Import EPUB</button>
+      <button class="sample-btn primary" id="epubBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5v11"/><path d="M7.5 10 12 15l4.5-5"/><path d="M4.5 19.5h15"/></svg>Import EPUB</button>
       <button class="sample-btn" id="sampleBtn">Sample text</button>
     </div>
   </div>
@@ -667,7 +908,7 @@
 <div class="panel" id="tocPanel">
   <div class="panel-header">
     <div class="panel-title">Chapters</div>
-    <button class="close-btn" id="closeTocBtn">Close ✕</button>
+    <button class="close-btn" id="closeTocBtn" aria-label="Close chapters">Close<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></svg></button>
   </div>
   <div class="toc-list" id="tocList"></div>
 </div>
@@ -675,9 +916,9 @@
 <div class="panel" id="bookmarksPanel">
   <div class="panel-header">
     <div class="panel-title">Bookmarks</div>
-    <button class="close-btn" id="closeBookmarksBtn">Close ✕</button>
+    <button class="close-btn" id="closeBookmarksBtn" aria-label="Close bookmarks">Close<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></svg></button>
   </div>
-  <button class="add-bookmark-btn" id="addBookmarkBtn">🔖 Save current position</button>
+  <button class="add-bookmark-btn" id="addBookmarkBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z"/></svg>Save current position</button>
   <div class="toc-list" id="bookmarkList"></div>
 </div>
 
@@ -702,7 +943,8 @@
   const speedSlider = document.getElementById('speed');
   const speedNum = document.getElementById('speedNum');
   const progressFill = document.getElementById('progressFill');
-  const progressLabel = document.getElementById('progressLabel');
+  const progressCount = document.getElementById('progressCount');
+  const progressPct = document.getElementById('progressPct');
   const stats = document.getElementById('stats');
   const panel = document.getElementById('panel');
   const closePanelBtn = document.getElementById('closePanelBtn');
@@ -739,7 +981,7 @@
   // Render a word with the pivot letter aligned to center
   function renderWord(w) {
     if (!w) {
-      wordEl.innerHTML = '<span class="empty-hint">end of text</span>';
+      wordEl.innerHTML = '<span class="empty-hint"><span class="line-1">end of text</span></span>';
       wordEl.style.transform = 'translateX(0)';
       return;
     }
@@ -795,8 +1037,13 @@
 
   function updateUI() {
     const total = words.length;
-    progressLabel.textContent = (Math.min(cursor, total)) + ' / ' + total;
-    progressFill.style.width = total ? (Math.min(cursor, total) / total * 100) + '%' : '0%';
+    const done = Math.min(cursor, total);
+    progressCount.textContent = done + ' / ' + total;
+    progressPct.textContent = total ? Math.round(done / total * 100) + '%' : '0%';
+    progressFill.style.width = total ? (done / total * 100) + '%' : '0%';
+    // Without a book, Start does nothing — the empty-state styling moves the
+    // one filled control over to Library.
+    document.body.classList.toggle('no-book', !total);
     const ci = currentChapterIdx();
     if (ci >= 0 && chapterBar.classList.contains('visible')) {
       const ch = chapters[ci];
@@ -810,7 +1057,7 @@
       const minsLeft = remainingWords / wpm;
       const m = Math.floor(minsLeft);
       const s = Math.round((minsLeft - m) * 60);
-      stats.textContent = total + ' words · ' + (m > 0 ? m + 'm ' : '') + s + 's';
+      stats.textContent = total + ' words · ' + (m > 0 ? m + 'm' : s + 's');
     } else {
       stats.textContent = '— · —';
     }
@@ -1077,11 +1324,11 @@
       row.className = 'bookmark-row';
       row.innerHTML =
         '<button class="bookmark-item">' +
-          '<span class="icon">🔖</span>' +
+          '<span class="icon"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z\"/></svg></span>' +
           '<span class="label"></span>' +
           '<span class="meta">' + b.percent + '%</span>' +
         '</button>' +
-        '<button class="bookmark-delete" aria-label="Delete">✕</button>';
+        '<button class="bookmark-delete" aria-label="Delete"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5.5 5.5l13 13M18.5 5.5l-13 13\"/></svg></button>';
       row.querySelector('.label').textContent = b.chapterTitle || 'Saved position';
       // Word index, not percent: two bookmarks in one chapter can round to the
       // same percent, and addBookmark already refuses duplicate indices.
@@ -1171,7 +1418,7 @@
           '<span class="label"></span>' +
           '<span class="sub"></span>' +
         '</button>' +
-        '<button class="bookmark-delete" aria-label="Delete">✕</button>';
+        '<button class="bookmark-delete" aria-label="Delete"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5.5 5.5l13 13M18.5 5.5l-13 13\"/></svg></button>';
       const item = row.querySelector('.bookmark-item');
       if (r.id === currentBookId) item.classList.add('current');
       row.querySelector('.label').textContent = r.title || 'Untitled';

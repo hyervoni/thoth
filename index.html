@@ -849,6 +849,8 @@
   }
 
   function loadText(t) {
+    currentBookId = null;
+    currentRow = null;
     loadBook({ title: '', chapters: [{ title: '', text: t }] });
   }
 
@@ -1488,6 +1490,7 @@
     epubBtn.disabled = true;
     try {
       const book = await parseEpub(file);
+      flushProgress();
       const row = await saveNewBook(book);
       currentBookId = row.id;
       currentRow = row;

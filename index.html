@@ -1088,6 +1088,7 @@
 
   function clearStage() {
     stop();
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
     words = [];
     chapters = [];
     bookmarks = [];
@@ -1102,14 +1103,20 @@
   }
 
   async function deleteBook(id) {
-    await dbDelete(STORE_LIBRARY, id);
-    await dbDelete(STORE_BOOKS, id);
     if (id === currentBookId) {
       clearStage();
       await saveSettings();
     }
+    try {
+      await dbDelete(STORE_LIBRARY, id);
+      await dbDelete(STORE_BOOKS, id);
+    } catch (e) {
+      alert('Could not delete the book: ' + (e && e.message ? e.message : e));
+    }
     renderLibrary();
   }
+
+  let openInFlight = false;
 
   async function renderLibrary() {
     let rows = [];
@@ -1130,12 +1137,18 @@
       row.querySelector('.label').textContent = r.title || 'Untitled';
       row.querySelector('.sub').textContent = formatRowMeta(r);
       item.addEventListener('click', async () => {
+        if (openInFlight) return;
+        openInFlight = true;
         panel.classList.remove('open');
-        const ok = await openBookById(r.id);
-        if (!ok) {
-          alert('This book\'s text is missing. Removing it from the library.');
-          await deleteBook(r.id);
-          panel.classList.add('open');
+        try {
+          const ok = await openBookById(r.id);
+          if (!ok) {
+            alert('This book\'s text is missing. Removing it from the library.');
+            await deleteBook(r.id);
+            panel.classList.add('open');
+          }
+        } finally {
+          openInFlight = false;
         }
       });
       row.querySelector('.bookmark-delete').addEventListener('click', async (e) => {

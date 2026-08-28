@@ -848,9 +848,12 @@
 
   const SAMPLE_TEXT = "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters. \"My dear Mr. Bennet,\" said his lady to him one day, \"have you heard that Netherfield Park is let at last?\" Mr. Bennet replied that he had not. \"But it is,\" returned she; \"for Mrs. Long has just been here, and she told me all about it.\" Mr. Bennet made no answer. \"Do not you want to know who has taken it?\" cried his wife impatiently. \"You want to tell me, and I have no objection to hearing it.\"";
 
-  // Ephemeral: no library row, no IndexedDB write at all. currentBookId is
-  // left alone on purpose, so a reload during the demo returns to the real
-  // book. currentRow === null is what makes every persistence path a no-op.
+  // Ephemeral: no library row is created or touched. currentBookId is left
+  // alone on purpose, so a reload during the demo returns to the real book.
+  // currentRow === null suppresses only the row write — WPM changes still
+  // write {wpm, currentBookId: <unchanged>} to settings, same as always;
+  // WPM belongs to the reader, not the book, so the demo does not special-
+  // case it.
   function loadSampleDemo() {
     flushProgress();
     currentRow = null;
@@ -1255,7 +1258,11 @@
 
   // --- Library records ---
   let currentBookId = null;
-  let currentRow = null;   // null while the ephemeral sample demo is loaded
+  // null in two distinct situations: the ephemeral sample demo is loaded, or
+  // nothing is loaded at all. Both suppress the library row write; neither
+  // should suppress the settings write (WPM, currentBookId) — see
+  // writeRowNow.
+  let currentRow = null;
 
   function countWords(chs) {
     let n = 0;
@@ -1299,13 +1306,17 @@
   }
 
   let saveTimer = null;
+  // The row write is guarded on currentRow (no row while the demo is loaded
+  // or nothing is loaded at all) but the settings write is not: WPM belongs
+  // to the reader, not the book, and must persist in both of those cases too.
   async function writeRowNow() {
     saveTimer = null;
-    if (!currentRow) return;
-    currentRow.cursor = cursor;
-    currentRow.bookmarks = bookmarks;
     try {
-      await dbSet(STORE_LIBRARY, currentRow);
+      if (currentRow) {
+        currentRow.cursor = cursor;
+        currentRow.bookmarks = bookmarks;
+        await dbSet(STORE_LIBRARY, currentRow);
+      }
       await saveSettings();
     } catch (e) { console.warn('save failed', e); }
   }
@@ -1380,7 +1391,9 @@
     } catch (e) { /* boot empty rather than fail */ }
   }
   initApp();
-  window.addEventListener('beforeunload', () => { if (currentRow) writeRowNow(); });
+  // Not gated on currentRow: a pending WPM change must still be written even
+  // with no row loaded (see writeRowNow).
+  window.addEventListener('beforeunload', () => { writeRowNow(); });
 
   // --- EPUB import ---
   let jszipPromise;

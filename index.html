@@ -1258,8 +1258,40 @@
     return true;
   }
 
+  // Runs at startup rather than inside onupgradeneeded: the versionchange
+  // transaction is the fragile place to do this, and a failure here must not
+  // take the app down with it.
+  async function migrateV1() {
+    const saved = await dbGet(STORE_BOOKS, LEGACY_KEY);
+    if (!saved || !saved.chapters || !saved.chapters.length) return;
+    // A v1 record without a title came from the removed paste flow. Title it
+    // from its own first words rather than discarding someone's reading.
+    let title = saved.title || '';
+    if (!title) title = titleFromText(saved.chapters[0].text || '');
+    const id = deriveBookId({ identifier: '', title: title, author: '', fileName: '' });
+    await dbSet(STORE_BOOKS, { chapters: saved.chapters }, id);
+    const when = saved.savedAt || Date.now();
+    await dbSet(STORE_LIBRARY, {
+      id: id,
+      title: title,
+      author: '',
+      wordCount: countWords(saved.chapters),
+      cursor: saved.index || 0,
+      bookmarks: Array.isArray(saved.bookmarks) ? saved.bookmarks : [],
+      addedAt: when,
+      lastOpenedAt: when,
+    });
+    await dbSet(STORE_SETTINGS, {
+      wpm: saved.wpm || 350,
+      currentBookId: id,
+    }, SETTINGS_KEY);
+    // Last, so any earlier failure leaves 'current' in place for a retry.
+    await dbDelete(STORE_BOOKS, LEGACY_KEY);
+  }
+
   async function initApp() {
     try {
+      await migrateV1();
       const s = await loadSettings();
       wpm = s.wpm;
       speedSlider.value = wpm;

@@ -1244,7 +1244,7 @@
     const row = await dbGet(STORE_LIBRARY, id);
     if (!row) return false;
     const rec = await dbGet(STORE_BOOKS, id);
-    if (!rec || !rec.chapters || !rec.chapters.length) return false;
+    if (!rec || !Array.isArray(rec.chapters) || !rec.chapters.length) return false;
     currentBookId = id;
     currentRow = row;
     row.lastOpenedAt = Date.now();
@@ -1263,7 +1263,7 @@
   // take the app down with it.
   async function migrateV1() {
     const saved = await dbGet(STORE_BOOKS, LEGACY_KEY);
-    if (!saved || !saved.chapters || !saved.chapters.length) return;
+    if (!saved || !Array.isArray(saved.chapters) || !saved.chapters.length) return;
     // A v1 record without a title came from the removed paste flow. Title it
     // from its own first words rather than discarding someone's reading.
     let title = saved.title || '';

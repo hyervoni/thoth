@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; overflow: hidden; }
+    a { color: #d8453a; }
+    a:hover { color: #f2eee6; }
+    .grain::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      pointer-events: none;
+      opacity: 0.045;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+  </style>
+</helmet>
+
+<div class="grain" style="width: 390px; height: 844px; position: relative; background-color: #17130f; background-image: radial-gradient(120% 60% at 50% 0%, #221c16 0%, #17130f 66%); color: #f2eee6; font-family: 'Fraunces', Georgia, serif; display: flex; flex-direction: column; padding: 20px 24px; overflow: hidden;">
+
+  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 0 18px; border-bottom: 1px solid #3a3229;">
+    <div style="font-size: 23px; font-weight: 700; font-style: italic; font-variation-settings: 'opsz' 144; letter-spacing: -0.01em;">Chapters</div>
+    <div style="display: flex; align-items: center; gap: 8px; color: #9c9284;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;">Close</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></svg>
+    </div>
+  </div>
+
+  <div style="flex: 1 1 0; min-height: 0; display: flex; flex-direction: column;">
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6e655a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">01</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #f2eee6;  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Debts and lessons</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">1.1K</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6e655a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">02</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #f2eee6;  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">On the banks of the Gran</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">0.9K</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6e655a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">03</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #f2eee6;  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">In Carnuntum</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">1.4K</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #d8453a;"></div>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #d8453a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">04</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #d8453a; font-style: italic; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">The inner citadel</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">1.2K</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6e655a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">05</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #f2eee6;  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">At dawn</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">0.8K</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6e655a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">06</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #f2eee6;  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">The substance of things</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">1.3K</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6e655a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">07</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #f2eee6;  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">On the nature of the whole</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">1.1K</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6e655a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">08</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #f2eee6;  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">What is not harmful to the city</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">0.9K</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6e655a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">09</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #f2eee6;  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Injustice is impiety</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">1.0K</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6e655a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">10</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #f2eee6;  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">My soul, will you ever</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">1.2K</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6e655a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">11</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #f2eee6;  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">The properties of the rational soul</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">0.7K</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: baseline; gap: 14px; padding: 15px 0 15px 14px; border-bottom: 1px solid #2a241d;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: #6e655a; letter-spacing: 0.08em; min-width: 24px; flex-shrink: 0;">12</span>
+      <span style="flex: 1 1 0; min-width: 0; font-size: 16px; line-height: 1.3; color: #f2eee6;  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Everything you wish to reach</span>
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.12em; flex-shrink: 0;">1.5K</span>
+    </div>
+
+    <div style="flex: 1 1 0; min-height: 0;"></div>
+
+    <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #6e655a; letter-spacing: 0.16em; text-transform: uppercase; padding-top: 16px;">12 chapters &middot; 4180 words &middot; reading IV</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

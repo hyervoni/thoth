@@ -1088,34 +1088,84 @@
 
   // --- Persistence (IndexedDB) ---
   const DB_NAME = 'thoth';
-  const STORE = 'books';
-  const KEY = 'current';
+  const DB_VERSION = 2;
+  const STORE_BOOKS = 'books';
+  const STORE_LIBRARY = 'library';
+  const STORE_SETTINGS = 'settings';
+  const SETTINGS_KEY = 'app';
+  const LEGACY_KEY = 'current';
   let dbPromise;
+  let dbBlockedWarned = false;
+
   function openDB() {
     if (!dbPromise) {
       dbPromise = new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, 1);
-        req.onupgradeneeded = () => req.result.createObjectStore(STORE);
-        req.onsuccess = () => resolve(req.result);
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE_BOOKS)) {
+            db.createObjectStore(STORE_BOOKS);
+          }
+          if (!db.objectStoreNames.contains(STORE_LIBRARY)) {
+            db.createObjectStore(STORE_LIBRARY, { keyPath: 'id' });
+          }
+          if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
+            db.createObjectStore(STORE_SETTINGS);
+          }
+        };
+        // Fires when another tab holds an older connection open. It fires
+        // neither onsuccess nor onerror, so without this the promise never
+        // settles and the app hangs on an empty stage with no explanation.
+        req.onblocked = () => {
+          if (dbBlockedWarned) return;
+          dbBlockedWarned = true;
+          alert('Thoth is open in another tab. Close it and reload this page.');
+        };
+        req.onsuccess = () => {
+          const db = req.result;
+          // Let a future version upgrade proceed instead of blocking it the
+          // way the v1 code blocks this one.
+          db.onversionchange = () => db.close();
+          resolve(db);
+        };
         req.onerror = () => reject(req.error);
       });
     }
     return dbPromise;
   }
-  async function dbGet(key) {
+  async function dbGet(store, key) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, 'readonly');
-      const req = tx.objectStore(STORE).get(key);
+      const tx = db.transaction(store, 'readonly');
+      const req = tx.objectStore(store).get(key);
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
   }
-  async function dbSet(key, value) {
+  async function dbGetAll(store) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(value, key);
+      const tx = db.transaction(store, 'readonly');
+      const req = tx.objectStore(store).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function dbSet(store, value, key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(store, 'readwrite');
+      if (key === undefined) tx.objectStore(store).put(value);
+      else tx.objectStore(store).put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  async function dbDelete(store, key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(store, 'readwrite');
+      tx.objectStore(store).delete(key);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
@@ -1126,7 +1176,7 @@
     saveTimer = null;
     if (!words.length) return;
     try {
-      await dbSet(KEY, {
+      await dbSet(STORE_BOOKS, {
         title: bookTitle,
         chapters: chapters.map(c => ({
           title: c.title,
@@ -1136,7 +1186,7 @@
         wpm,
         bookmarks,
         savedAt: Date.now(),
-      });
+      }, LEGACY_KEY);
     } catch (e) { console.warn('save failed', e); }
   }
   function persistBook() {
@@ -1150,7 +1200,7 @@
 
   async function restoreSaved() {
     try {
-      const saved = await dbGet(KEY);
+      const saved = await dbGet(STORE_BOOKS, LEGACY_KEY);
       if (!saved || !saved.chapters || !saved.chapters.length) return;
       if (saved.wpm) {
         wpm = saved.wpm;

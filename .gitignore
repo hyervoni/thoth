@@ -16,3 +16,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Design canvas build output (2.5 MB, regenerable from design/*.dc.html)
+design/thoth-rediseno-visual.html

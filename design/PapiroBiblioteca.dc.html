@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; overflow: hidden; }
+    a { color: #b7352a; }
+    a:hover { color: #221f1a; }
+    .fibre::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      pointer-events: none;
+      opacity: 0.075;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6 0.04' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+  </style>
+</helmet>
+
+<div class="fibre" style="width: 390px; height: 844px; position: relative; background-color: #f2ebde; background-image: radial-gradient(120% 60% at 50% 0%, #f8f2e6 0%, #f2ebde 66%); color: #221f1a; font-family: 'Fraunces', Georgia, serif; display: flex; flex-direction: column; padding: 20px 24px; overflow: hidden;">
+
+  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 0 18px; border-bottom: 1px solid #bcae95;">
+    <div style="font-size: 23px; font-weight: 700; font-style: italic; font-variation-settings: 'opsz' 144; letter-spacing: -0.01em;">Library</div>
+    <div style="display: flex; align-items: center; gap: 8px; color: #756d5f;">
+      <span style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;">Close</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></svg>
+    </div>
+  </div>
+
+  <div style="flex: 1 1 0; min-height: 0; display: flex; flex-direction: column;">
+
+    <div style="display: flex; align-items: flex-start; gap: 14px; padding: 20px 0 16px; border-bottom: 1px solid #ddd2be;">
+      <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 7px;">
+        <div style="display: flex; align-items: baseline; gap: 10px;"><span style="font-style: italic; font-weight: 500; font-size: 15px; color: #b7352a; font-variation-settings: 'opsz' 144; flex-shrink: 0;">IV</span><span style="font-size: 17px; font-weight: 500; font-style: italic; color: #b7352a; line-height: 1.3;">Meditations</span></div>
+        <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #756d5f; letter-spacing: 0.14em; text-transform: uppercase;">Marcus Aurelius &middot; Book IV &middot; 34%</div>
+        <div style="height: 2px; background: #ddd2be; margin-top: 4px; overflow: hidden;"><div style="height: 100%; width: 34%; background: #b7352a;"></div></div>
+      </div>
+      <div style="color: #8c8477; padding-top: 3px; flex-shrink: 0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></svg>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: flex-start; gap: 14px; padding: 20px 0 16px; border-bottom: 1px solid #ddd2be;">
+      <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 7px;">
+        <div style="font-size: 17px; font-weight: 500; line-height: 1.3;">Frankenstein</div>
+        <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #756d5f; letter-spacing: 0.14em; text-transform: uppercase;">Mary Shelley &middot; Finished</div>
+        <div style="height: 2px; background: #ddd2be; margin-top: 4px; overflow: hidden;"><div style="height: 100%; width: 100%; background: #b0a48c;"></div></div>
+      </div>
+      <div style="color: #8c8477; padding-top: 3px; flex-shrink: 0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></svg>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: flex-start; gap: 14px; padding: 20px 0 16px; border-bottom: 1px solid #ddd2be;">
+      <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 7px;">
+        <div style="font-size: 17px; font-weight: 500; line-height: 1.3;">The Waste Land</div>
+        <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #756d5f; letter-spacing: 0.14em; text-transform: uppercase;">T. S. Eliot &middot; Not started</div>
+        <div style="height: 2px; background: #ddd2be; margin-top: 4px; overflow: hidden;"><div style="height: 100%; width: 0%; background: #b7352a;"></div></div>
+      </div>
+      <div style="color: #8c8477; padding-top: 3px; flex-shrink: 0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></svg>
+      </div>
+    </div>
+
+    <div style="flex: 1 1 0; min-height: 0;"></div>
+
+    <div style="font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 9.5px; color: #8c8477; letter-spacing: 0.16em; text-transform: uppercase; padding-bottom: 14px;">3 books &middot; stored on this device</div>
+  </div>
+
+  <div style="display: flex; gap: 10px; padding-top: 18px; border-top: 1px solid #bcae95;">
+    <div style="flex: 1 1 0; height: 56px; background: #221f1a; color: #f2ebde; display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 15px; font-weight: 500; letter-spacing: 0.02em;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v11"/><path d="M7.5 10 12 15l4.5-5"/><path d="M4.5 19.5h15"/></svg>
+      Import EPUB
+    </div>
+    <div style="flex: 0 0 118px; height: 56px; border: 1px solid #b0a48c; color: #221f1a; display: flex; align-items: center; justify-content: center; font-size: 14px; font-style: italic; font-weight: 500;">Sample text</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

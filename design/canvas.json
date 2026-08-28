@@ -1,0 +1,58 @@
+{
+  "artboards": [
+    { "file": "Actual.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Referencia · estado actual" },
+    { "file": "Main.dc.html", "x": 500, "y": 0, "w": 390, "h": 844, "title": "A · Papel nocturno — reader" },
+    { "file": "Papiro.dc.html", "x": 1000, "y": 0, "w": 390, "h": 844, "title": "B · Papiro — reader" },
+    { "file": "Instrumento.dc.html", "x": 1500, "y": 0, "w": 390, "h": 844, "title": "C · Instrumento — reader" },
+    { "file": "Estela.dc.html", "x": 2000, "y": 0, "w": 390, "h": 844, "title": "D · Estela — reader" },
+    { "file": "MainBiblioteca.dc.html", "x": 500, "y": 1010, "w": 390, "h": 844, "title": "A · Papel nocturno — biblioteca" },
+    { "file": "PapiroBiblioteca.dc.html", "x": 1000, "y": 1010, "w": 390, "h": 844, "title": "B · Papiro — biblioteca" },
+    { "file": "InstrumentoBiblioteca.dc.html", "x": 1500, "y": 1010, "w": 390, "h": 844, "title": "C · Instrumento — biblioteca" },
+    { "file": "EstelaBiblioteca.dc.html", "x": 2000, "y": 1010, "w": 390, "h": 844, "title": "D · Estela — biblioteca" }
+  ],
+  "annotations": [
+    {
+      "id": "brief-general",
+      "x": 0,
+      "y": -560,
+      "w": 890,
+      "text": "THOTH · DIRECCIONES VISUALES\n\nCuatro direcciones sobre las dos superficies que cargan toda la app: el reader con libro cargado (fila de arriba) y el panel Biblioteca (fila de abajo). A la izquierda, el estado actual recreado con los valores exactos de index.html, para comparar honestamente.\n\nLo que se mantiene en las cuatro: RSVP con el pivot óptico centrado, cero radios, Fraunces / Newsreader / JetBrains Mono, targets de 44px o más. La palabra siempre en Newsreader — es lo único que no negocio.\n\nElegí una y la construyo completa: desktop 1440, Chapters, Bookmarks, focus mode, estado vacío, y después el diff sobre index.html."
+    },
+    {
+      "id": "nota-actual",
+      "x": 0,
+      "y": -300,
+      "w": 390,
+      "text": "REFERENCIA · ESTADO ACTUAL\n\nQué falla hoy, leído del código:\n\n· El header está comentado (index.html:604), así que la app no tiene firma en ninguna pantalla.\n· Iconos mezclados: un emoji de marcador, glifos ‹‹ y la palabra LOAD, tres lenguajes en una misma fila.\n· La palabra queda en 31px en un iPhone de 390 — el min/max colapsa ahí — cuando hay espacio para 42.\n· El thumb circular del slider es el único radio en una app deliberadamente sin radios.\n· El label de progreso centrado gasta una fila entera para dos números."
+    },
+    {
+      "id": "nota-a",
+      "x": 500,
+      "y": -300,
+      "w": 390,
+      "text": "A · PAPEL NOCTURNO\nEvolución fiel: mismo vocabulario, ejecución cuidada.\n\nPor qué: la identidad actual ya es buena, el problema es ejecución. Devuelve el header con marca de pluma, agrega grano de papel y viñeta, hairlines de página en el marco, una columna guía tenue en el pivot, un set de iconos dibujados y coherente, la palabra a 42px, el thumb cuadrado.\n\nTradeoff: es la menos memorable de las cuatro. Nadie va a preguntar qué app es por ver una captura."
+    },
+    {
+      "id": "nota-b",
+      "x": 1000,
+      "y": -300,
+      "w": 390,
+      "text": "B · PAPIRO\nPágina impresa: tema claro y rubricación.\n\nPor qué: la estructura de A invertida a pergamino, con el rojo usado como rúbrica de escriba — el numeral IV del capítulo, el pivot, los ticks. Resuelve de paso el tema claro/sepia que ya está pedido en annotations.md, y es el mejor modo para leer de día o en e-ink.\n\nTradeoff: pierde el fondo negro, que es justo lo que hace flotar la palabra en RSVP. De noche y en sesión larga cansa más."
+    },
+    {
+      "id": "nota-c",
+      "x": 1500,
+      "y": -300,
+      "w": 390,
+      "text": "C · INSTRUMENTO\nAparato de medición: mono primero, denso.\n\nPor qué: trata al lector como un instrumento. Regla con ticks bajo la palabra, progreso segmentado, escala de velocidad con mínimo y máximo rotulados, ETA del capítulo. Es la única dirección que sostiene bien las stats y la calibración de WPM que están en la tabla de annotations.md.\n\nTradeoff: la menos literaria. Más cromo compitiendo con la palabra, y el ámbar abandona el rojo que la app ya tiene."
+    },
+    {
+      "id": "nota-d",
+      "x": 2000,
+      "y": -300,
+      "w": 390,
+      "text": "D · ESTELA\nMonumento tipográfico: la apuesta fuerte.\n\nPor qué: composición asimétrica, bloque rojo sangrando por el borde superior con el WPM adentro, numeral de capítulo fantasma a 300px detrás de la palabra, cabecera rotada en el canto, progreso a sangre completa. Es la única que se reconoce en una captura.\n\nTradeoff: el cromo compite con la palabra justo donde no debería. Riesgo real de fatiga en sesión larga, y es mucho rojo fijo en pantalla."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

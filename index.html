@@ -1294,9 +1294,8 @@
     }
 
     const titleEl = opfDoc.querySelector('metadata > [*|title], metadata > title');
-    const bookTitle =
-      (titleEl && titleEl.textContent ? titleEl.textContent.trim() : '')
-      || file.name.replace(/\.epub$/i, '');
+    const rawTitle = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
+    const bookTitle = rawTitle || file.name.replace(/\.epub$/i, '');
 
     const creatorEl = opfDoc.querySelector('metadata > [*|creator], metadata > creator');
     const author = creatorEl && creatorEl.textContent ? creatorEl.textContent.trim() : '';
@@ -1413,7 +1412,7 @@
     return {
       id: deriveBookId({
         identifier: identifier,
-        title: bookTitle,
+        title: rawTitle,
         author: author,
         fileName: file.name,
       }),

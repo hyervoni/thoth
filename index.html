@@ -1360,29 +1360,45 @@
     let title = saved.title || '';
     if (!title) title = titleFromText(saved.chapters[0].text || '');
     const id = deriveBookId({ identifier: '', title: title, author: '', fileName: '' });
-    await dbSet(STORE_BOOKS, { chapters: saved.chapters }, id);
-    const when = saved.savedAt || Date.now();
-    await dbSet(STORE_LIBRARY, {
-      id: id,
-      title: title,
-      author: '',
-      wordCount: countWords(saved.chapters),
-      cursor: saved.index || 0,
-      bookmarks: Array.isArray(saved.bookmarks) ? saved.bookmarks : [],
-      addedAt: when,
-      lastOpenedAt: when,
-    });
-    await dbSet(STORE_SETTINGS, {
-      wpm: saved.wpm || 350,
-      currentBookId: id,
-    }, SETTINGS_KEY);
+    // If the library row already exists, a previous run of this migration
+    // completed its writes but was interrupted before the legacy delete
+    // landed. Re-running the writes would stomp the row's real cursor and
+    // bookmarks with this stale v1 snapshot, discarding everything read
+    // since. One dbGet distinguishes that from a genuinely fresh migration
+    // (and from an orphaned text-only write with no row yet) — only the
+    // latter two should write.
+    const existingRow = await dbGet(STORE_LIBRARY, id);
+    if (!existingRow) {
+      await dbSet(STORE_BOOKS, { chapters: saved.chapters }, id);
+      const when = saved.savedAt || Date.now();
+      await dbSet(STORE_LIBRARY, {
+        id: id,
+        title: title,
+        author: '',
+        wordCount: countWords(saved.chapters),
+        cursor: saved.index || 0,
+        bookmarks: Array.isArray(saved.bookmarks) ? saved.bookmarks : [],
+        addedAt: when,
+        lastOpenedAt: when,
+      });
+      await dbSet(STORE_SETTINGS, {
+        wpm: saved.wpm || 350,
+        currentBookId: id,
+      }, SETTINGS_KEY);
+    }
     // Last, so any earlier failure leaves 'current' in place for a retry.
     await dbDelete(STORE_BOOKS, LEGACY_KEY);
   }
 
   async function initApp() {
     try {
-      await migrateV1();
+      // Scoped to itself: a migration failure must cost only the migration,
+      // not suppress settings/currentBookId restore on every subsequent boot
+      // (the legacy record is deliberately left in place on failure, so a
+      // shared try/catch here would repeat the failure forever).
+      try {
+        await migrateV1();
+      } catch (e) { /* retry next boot; the legacy record is untouched */ }
       const s = await loadSettings();
       wpm = s.wpm;
       speedSlider.value = wpm;

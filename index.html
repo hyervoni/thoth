@@ -873,7 +873,10 @@
       const chWords = ch.text.trim().split(/\s+/).filter(Boolean);
       if (!chWords.length) continue;
       chapters.push({ title: ch.title || '', start: offset, end: offset + chWords.length });
-      words.push(...chWords);
+      // Not words.push(...chWords): a single chapter above the engine's
+      // spread-argument limit (~65k words in JSC) throws RangeError. A loop
+      // has no such limit.
+      for (let i = 0; i < chWords.length; i++) words.push(chWords[i]);
       offset += chWords.length;
     }
     const hasRealChapters = chapters.length > 1 || (chapters[0] && chapters[0].title);

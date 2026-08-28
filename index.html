@@ -1236,6 +1236,31 @@
     return jszipPromise;
   }
 
+  // --- Book identity ---
+  function normalizePart(s) {
+    if (!s) return '';
+    return String(s).trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+  function normalizeIdentifier(s) {
+    return normalizePart(s).replace(/^urn:(isbn|uuid):/, '');
+  }
+  function titleFromText(text) {
+    const words = String(text || '').trim().split(/\s+/).filter(Boolean).slice(0, 6);
+    const joined = words.join(' ');
+    return joined.length > 60 ? joined.slice(0, 60).trim() : joined;
+  }
+  // First rule that yields a usable value wins. Ids are opaque strings:
+  // no prefix, no namespace.
+  function deriveBookId(meta) {
+    const ident = normalizeIdentifier(meta.identifier || '');
+    if (ident.length >= 4) return ident;
+    const t = normalizePart(meta.title || '');
+    if (t) return t + '|' + normalizePart(meta.author || '');
+    const fromFile = normalizePart(String(meta.fileName || '').replace(/\.epub$/i, ''));
+    if (fromFile) return fromFile;
+    return 'book-' + Date.now().toString(36);
+  }
+
   async function parseEpub(file) {
     const JSZip = await loadJSZip();
     const zip = await JSZip.loadAsync(file);
@@ -1272,6 +1297,11 @@
     const bookTitle =
       (titleEl && titleEl.textContent ? titleEl.textContent.trim() : '')
       || file.name.replace(/\.epub$/i, '');
+
+    const creatorEl = opfDoc.querySelector('metadata > [*|creator], metadata > creator');
+    const author = creatorEl && creatorEl.textContent ? creatorEl.textContent.trim() : '';
+    const identEl = opfDoc.querySelector('metadata > [*|identifier], metadata > identifier');
+    const identifier = identEl && identEl.textContent ? identEl.textContent.trim() : '';
 
     const manifest = {};
     opfDoc.querySelectorAll('manifest > item').forEach(item => {
@@ -1380,7 +1410,17 @@
     }
 
     if (!chapters.length) throw new Error('No readable text found');
-    return { title: bookTitle, chapters };
+    return {
+      id: deriveBookId({
+        identifier: identifier,
+        title: bookTitle,
+        author: author,
+        fileName: file.name,
+      }),
+      title: bookTitle,
+      author: author,
+      chapters: chapters,
+    };
   }
 
   epubBtn.addEventListener('click', () => epubInput.click());

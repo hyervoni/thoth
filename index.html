@@ -332,6 +332,26 @@
     transition: color 0.15s;
   }
   .bookmark-delete:hover { color: var(--accent); }
+  .book-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  /* Titles wrap instead of the ellipsis truncation .bookmark-item .label
+     uses elsewhere — long titles must wrap per spec, and without this the
+     column layout's shrink-to-fit sizing lets nowrap text overflow the row. */
+  .book-item .label {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  .book-item .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+  }
+  .book-item.current .label { color: var(--accent); font-style: italic; }
   .bookmark-empty {
     padding: 40px 16px;
     text-align: center;
@@ -499,26 +519,6 @@
     text-transform: uppercase;
     padding: 8px 12px;
   }
-  textarea {
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-    border: 1px solid var(--line-strong);
-    background: var(--bg);
-    padding: 20px;
-    font-family: 'Newsreader', Georgia, serif;
-    font-size: 17px;
-    line-height: 1.6;
-    color: var(--ink);
-    caret-color: var(--accent);
-    resize: none;
-    outline: none;
-    font-variation-settings: "opsz" 16;
-    transition: border-color 0.15s;
-  }
-  textarea::placeholder { color: var(--ink-soft); font-style: italic; }
-  textarea:focus { border-color: var(--ink); }
-
   .panel-actions {
     display: flex;
     flex-direction: column;
@@ -916,6 +916,7 @@
 
   textBtn.addEventListener('click', () => {
     stop();
+    renderLibrary();
     panel.classList.add('open');
   });
 
@@ -1070,6 +1071,80 @@
         removeBookmark(i);
       });
       bookmarkList.appendChild(row);
+    });
+  }
+
+  // --- Library ---
+  function formatRowMeta(row) {
+    const parts = [];
+    if (row.author) parts.push(row.author);
+    const total = row.wordCount || 0;
+    const pct = total ? Math.round((row.cursor || 0) / total * 100) : 0;
+    parts.push(pct + '%');
+    const when = new Date(row.lastOpenedAt || row.addedAt || Date.now());
+    parts.push(when.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }));
+    return parts.join(' · ');
+  }
+
+  function clearStage() {
+    stop();
+    words = [];
+    chapters = [];
+    bookmarks = [];
+    bookTitle = '';
+    cursor = 0;
+    currentBookId = null;
+    currentRow = null;
+    chapterBar.classList.remove('visible');
+    wordEl.innerHTML = '<span class="empty-hint">import an epub<br>to begin</span>';
+    playBtn.textContent = 'Start';
+    updateUI();
+  }
+
+  async function deleteBook(id) {
+    await dbDelete(STORE_LIBRARY, id);
+    await dbDelete(STORE_BOOKS, id);
+    if (id === currentBookId) {
+      clearStage();
+      await saveSettings();
+    }
+    renderLibrary();
+  }
+
+  async function renderLibrary() {
+    let rows = [];
+    try { rows = await dbGetAll(STORE_LIBRARY); } catch (e) { rows = []; }
+    rows.sort((a, b) => (b.lastOpenedAt || 0) - (a.lastOpenedAt || 0));
+    libraryList.innerHTML = '';
+    rows.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'bookmark-row';
+      row.innerHTML =
+        '<button class="bookmark-item book-item">' +
+          '<span class="label"></span>' +
+          '<span class="sub"></span>' +
+        '</button>' +
+        '<button class="bookmark-delete" aria-label="Delete">✕</button>';
+      const item = row.querySelector('.bookmark-item');
+      if (r.id === currentBookId) item.classList.add('current');
+      row.querySelector('.label').textContent = r.title || 'Untitled';
+      row.querySelector('.sub').textContent = formatRowMeta(r);
+      item.addEventListener('click', async () => {
+        panel.classList.remove('open');
+        const ok = await openBookById(r.id);
+        if (!ok) {
+          alert('This book\'s text is missing. Removing it from the library.');
+          await deleteBook(r.id);
+          panel.classList.add('open');
+        }
+      });
+      row.querySelector('.bookmark-delete').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const name = r.title || 'this book';
+        if (!confirm('Delete ' + name + '? This cannot be undone.')) return;
+        await deleteBook(r.id);
+      });
+      libraryList.appendChild(row);
     });
   }
 
@@ -1522,6 +1597,7 @@
       await saveSettings();
       panel.classList.remove('open');
       play();
+      renderLibrary();
     } catch (err) {
       alert('Could not read EPUB: ' + err.message);
     } finally {

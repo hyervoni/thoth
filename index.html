@@ -1072,6 +1072,8 @@
         '</button>' +
         '<button class="bookmark-delete" aria-label="Delete">✕</button>';
       row.querySelector('.label').textContent = b.chapterTitle || 'Saved position';
+      row.querySelector('.bookmark-delete').setAttribute(
+        'aria-label', 'Delete bookmark at ' + b.percent + '%');
       row.querySelector('.bookmark-item').addEventListener('click', () => {
         jumpToBookmark(i);
         bookmarksPanel.classList.remove('open');
@@ -1325,7 +1327,14 @@
     return { wpm: s.wpm || 350, currentBookId: s.currentBookId || null };
   }
 
+  // Never write settings we failed to read: on a boot where loadSettings()
+  // throws, the module defaults (wpm 350, currentBookId null) are all we have,
+  // and flushing those over a good stored record would lose the reader's
+  // resume pointer.
+  let settingsLoaded = false;
+
   async function saveSettings() {
+    if (!settingsLoaded) return;
     await dbSet(STORE_SETTINGS, { wpm: wpm, currentBookId: currentBookId }, SETTINGS_KEY);
   }
 
@@ -1367,8 +1376,13 @@
       restoredIndex: row.cursor || 0,
       restoredBookmarks: Array.isArray(row.bookmarks) ? row.bookmarks : [],
     });
-    await dbSet(STORE_LIBRARY, row);
-    await saveSettings();
+    // The book is already on stage by this point, so a failure here is a
+    // failed save, not a failed open — report it the way progress saves are
+    // reported rather than telling the caller the book did not open.
+    try {
+      await dbSet(STORE_LIBRARY, row);
+      await saveSettings();
+    } catch (e) { console.warn('save failed', e); }
     if (autoplay) play();
     return true;
   }
@@ -1422,8 +1436,9 @@
       // shared try/catch here would repeat the failure forever).
       try {
         await migrateV1();
-      } catch (e) { /* retry next boot; the legacy record is untouched */ }
+      } catch (e) { console.warn('migration failed; will retry next boot', e); }
       const s = await loadSettings();
+      settingsLoaded = true;
       wpm = s.wpm;
       speedSlider.value = wpm;
       speedNum.textContent = wpm;

@@ -473,7 +473,7 @@
     border: none;
   }
 
-  /* Text input panel */
+  /* Library panel (also reused by the Chapters and Bookmarks panels) */
   .panel {
     position: fixed;
     top: 0;
@@ -923,6 +923,9 @@
 
   textBtn.addEventListener('click', () => {
     stop();
+    // stop() only arms the debounce; flush now so the list's percentage for
+    // the open book isn't stale by up to 600ms.
+    flushProgress();
     renderLibrary();
     panel.classList.add('open');
   });
@@ -1127,8 +1130,19 @@
   let openInFlight = false;
 
   async function renderLibrary() {
-    let rows = [];
-    try { rows = await dbGetAll(STORE_LIBRARY); } catch (e) { rows = []; }
+    let rows;
+    try {
+      rows = await dbGetAll(STORE_LIBRARY);
+    } catch (e) {
+      // A transient IndexedDB failure must not render identically to a
+      // genuinely empty library — surface it instead of swallowing to [].
+      libraryList.innerHTML = '';
+      const err = document.createElement('div');
+      err.className = 'bookmark-empty';
+      err.textContent = 'Could not load your library: ' + (e && e.message ? e.message : e);
+      libraryList.appendChild(err);
+      return;
+    }
     rows.sort((a, b) => (b.lastOpenedAt || 0) - (a.lastOpenedAt || 0));
     libraryList.innerHTML = '';
     rows.forEach(r => {
@@ -1144,6 +1158,7 @@
       if (r.id === currentBookId) item.classList.add('current');
       row.querySelector('.label').textContent = r.title || 'Untitled';
       row.querySelector('.sub').textContent = formatRowMeta(r);
+      row.querySelector('.bookmark-delete').setAttribute('aria-label', 'Delete ' + (r.title || 'this book'));
       item.addEventListener('click', async () => {
         if (openInFlight) return;
         openInFlight = true;
@@ -1151,10 +1166,14 @@
         try {
           const ok = await openBookById(r.id);
           if (!ok) {
-            alert('This book\'s text is missing. Removing it from the library.');
-            await deleteBook(r.id);
+            if (confirm('This book\'s text is missing. Delete it from the library?')) {
+              await deleteBook(r.id);
+            }
             panel.classList.add('open');
           }
+        } catch (e) {
+          alert('Could not open this book: ' + (e && e.message ? e.message : e));
+          panel.classList.add('open');
         } finally {
           openInFlight = false;
         }

@@ -1588,6 +1588,21 @@
   const MAX_EPUB_MB = 100; // guards against IndexedDB quota errors
   const MAX_EPUB_SIZE = MAX_EPUB_MB * 1024 * 1024;
 
+  // dc:identifier is unreliable — Calibre and friends reuse one UUID across
+  // every book in an export. A dedupe hit is only honored when the stored
+  // title agrees; otherwise the import gets a disambiguated id.
+  async function resolveImportId(book) {
+    const wanted = normalizePart(book.title);
+    let n = 1;
+    for (;;) {
+      const candidate = n === 1 ? book.id : book.id + '#' + n;
+      const row = await dbGet(STORE_LIBRARY, candidate);
+      if (!row) return { id: candidate, existing: null };
+      if (normalizePart(row.title) === wanted) return { id: candidate, existing: row };
+      n++;
+    }
+  }
+
   epubInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1603,7 +1618,24 @@
     try {
       const book = await parseEpub(file);
       flushProgress();
-      const row = await saveNewBook(book);
+      const resolved = await resolveImportId(book);
+      if (resolved.existing) {
+        panel.classList.remove('open');
+        await openBookById(resolved.id, { autoplay: true });
+        renderLibrary();
+        return;
+      }
+      book.id = resolved.id;
+      let row;
+      try {
+        row = await saveNewBook(book);
+      } catch (saveErr) {
+        const quota = saveErr && saveErr.name === 'QuotaExceededError';
+        alert(quota
+          ? 'No space left on this device. Delete a book and try again.'
+          : 'Could not save the book: ' + (saveErr && saveErr.message ? saveErr.message : saveErr));
+        return;
+      }
       currentBookId = row.id;
       currentRow = row;
       loadBook({ title: book.title, chapters: book.chapters });

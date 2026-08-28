@@ -853,7 +853,7 @@
   }
 
   function loadBook(book, opts = {}) {
-    const { restoredIndex = 0, fromStorage = false, restoredBookmarks = null } = opts;
+    const { restoredIndex = 0, restoredBookmarks = null } = opts;
     bookTitle = book.title || '';
     words = [];
     chapters = [];
@@ -874,7 +874,6 @@
       playBtn.textContent = cursor > 0 ? 'Continue' : 'Start';
     }
     updateUI();
-    if (!fromStorage) persistBook();
   }
 
   function currentChapterIdx() {
@@ -1015,6 +1014,7 @@
   // --- Bookmarks ---
   function addBookmark() {
     if (!words.length) return;
+    if (!currentRow) return;   // the sample demo owns no row
     if (bookmarks.some(b => b.index === cursor)) return; // skip exact duplicate
     const ci = currentChapterIdx();
     const ch = ci >= 0 ? chapters[ci] : null;
@@ -1026,13 +1026,13 @@
       savedAt: Date.now(),
     });
     renderBookmarks();
-    persistBook();
+    flushProgress();
   }
 
   function removeBookmark(i) {
     bookmarks.splice(i, 1);
     renderBookmarks();
-    persistBook();
+    flushProgress();
   }
 
   function jumpToBookmark(i) {
@@ -1171,54 +1171,102 @@
     });
   }
 
+  // --- Library records ---
+  let currentBookId = null;
+  let currentRow = null;   // null while the ephemeral sample demo is loaded
+
+  function countWords(chs) {
+    let n = 0;
+    for (const ch of chs) {
+      n += String(ch.text || '').trim().split(/\s+/).filter(Boolean).length;
+    }
+    return n;
+  }
+
+  function makeRow(book) {
+    const now = Date.now();
+    return {
+      id: book.id,
+      title: book.title || '',
+      author: book.author || '',
+      wordCount: countWords(book.chapters),
+      cursor: 0,
+      bookmarks: [],
+      addedAt: now,
+      lastOpenedAt: now,
+    };
+  }
+
+  // Text first, row second: if the text write fails there is never a library
+  // row pointing at nothing.
+  async function saveNewBook(book) {
+    await dbSet(STORE_BOOKS, { chapters: book.chapters }, book.id);
+    const row = makeRow(book);
+    await dbSet(STORE_LIBRARY, row);
+    return row;
+  }
+
+  async function loadSettings() {
+    const s = await dbGet(STORE_SETTINGS, SETTINGS_KEY);
+    if (!s) return { wpm: 350, currentBookId: null };
+    return { wpm: s.wpm || 350, currentBookId: s.currentBookId || null };
+  }
+
+  async function saveSettings() {
+    await dbSet(STORE_SETTINGS, { wpm: wpm, currentBookId: currentBookId }, SETTINGS_KEY);
+  }
+
   let saveTimer = null;
-  async function doSave() {
+  async function writeRowNow() {
     saveTimer = null;
-    if (!words.length) return;
+    if (!currentRow) return;
+    currentRow.cursor = cursor;
+    currentRow.bookmarks = bookmarks;
     try {
-      await dbSet(STORE_BOOKS, {
-        title: bookTitle,
-        chapters: chapters.map(c => ({
-          title: c.title,
-          text: words.slice(c.start, c.end).join(' '),
-        })),
-        index: cursor,
-        wpm,
-        bookmarks,
-        savedAt: Date.now(),
-      }, LEGACY_KEY);
+      await dbSet(STORE_LIBRARY, currentRow);
+      await saveSettings();
     } catch (e) { console.warn('save failed', e); }
   }
-  function persistBook() {
+  function flushProgress() {
     if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-    doSave();
+    writeRowNow();
   }
   function persistProgress() {
     if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(doSave, 600);
+    saveTimer = setTimeout(writeRowNow, 600);
   }
 
-  async function restoreSaved() {
-    try {
-      const saved = await dbGet(STORE_BOOKS, LEGACY_KEY);
-      if (!saved || !saved.chapters || !saved.chapters.length) return;
-      if (saved.wpm) {
-        wpm = saved.wpm;
-        speedSlider.value = wpm;
-        speedNum.textContent = wpm;
-      }
-      loadBook(
-        { title: saved.title, chapters: saved.chapters },
-        {
-          restoredIndex: saved.index || 0,
-          fromStorage: true,
-          restoredBookmarks: Array.isArray(saved.bookmarks) ? saved.bookmarks : [],
-        }
-      );
-    } catch (e) { /* ignore */ }
+  async function openBookById(id, opts) {
+    const autoplay = !!(opts && opts.autoplay);
+    flushProgress();
+    const row = await dbGet(STORE_LIBRARY, id);
+    if (!row) return false;
+    const rec = await dbGet(STORE_BOOKS, id);
+    if (!rec || !rec.chapters || !rec.chapters.length) return false;
+    currentBookId = id;
+    currentRow = row;
+    row.lastOpenedAt = Date.now();
+    loadBook({ title: row.title, chapters: rec.chapters }, {
+      restoredIndex: row.cursor || 0,
+      restoredBookmarks: Array.isArray(row.bookmarks) ? row.bookmarks : [],
+    });
+    await dbSet(STORE_LIBRARY, row);
+    await saveSettings();
+    if (autoplay) play();
+    return true;
   }
-  restoreSaved();
-  window.addEventListener('beforeunload', () => { if (words.length) doSave(); });
+
+  async function initApp() {
+    try {
+      const s = await loadSettings();
+      wpm = s.wpm;
+      speedSlider.value = wpm;
+      speedNum.textContent = wpm;
+      if (s.currentBookId) await openBookById(s.currentBookId, { autoplay: false });
+    } catch (e) { /* boot empty rather than fail */ }
+  }
+  initApp();
+  window.addEventListener('beforeunload', () => { if (currentRow) writeRowNow(); });
 
   // --- EPUB import ---
   let jszipPromise;
@@ -1440,7 +1488,11 @@
     epubBtn.disabled = true;
     try {
       const book = await parseEpub(file);
-      loadBook(book);
+      const row = await saveNewBook(book);
+      currentBookId = row.id;
+      currentRow = row;
+      loadBook({ title: book.title, chapters: book.chapters });
+      await saveSettings();
       panel.classList.remove('open');
       play();
     } catch (err) {

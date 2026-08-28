@@ -1072,8 +1072,11 @@
         '</button>' +
         '<button class="bookmark-delete" aria-label="Delete">✕</button>';
       row.querySelector('.label').textContent = b.chapterTitle || 'Saved position';
+      // Word index, not percent: two bookmarks in one chapter can round to the
+      // same percent, and addBookmark already refuses duplicate indices.
       row.querySelector('.bookmark-delete').setAttribute(
-        'aria-label', 'Delete bookmark at ' + b.percent + '%');
+        'aria-label',
+        'Delete bookmark: ' + (b.chapterTitle || 'saved position') + ', word ' + (b.index + 1));
       row.querySelector('.bookmark-item').addEventListener('click', () => {
         jumpToBookmark(i);
         bookmarksPanel.classList.remove('open');
@@ -1116,11 +1119,13 @@
   }
 
   async function deleteBook(id) {
-    if (id === currentBookId) {
-      clearStage();
-      await saveSettings();
-    }
+    const wasOpen = id === currentBookId;   // clearStage() nulls currentBookId
+    if (wasOpen) clearStage();
     try {
+      // Inside the try: a failing settings write must not abort the deletes
+      // and leave the stage cleared, the book still listed, and the user
+      // told nothing.
+      if (wasOpen) await saveSettings();
       await dbDelete(STORE_LIBRARY, id);
       await dbDelete(STORE_BOOKS, id);
     } catch (e) {
@@ -1330,7 +1335,9 @@
   // Never write settings we failed to read: on a boot where loadSettings()
   // throws, the module defaults (wpm 350, currentBookId null) are all we have,
   // and flushing those over a good stored record would lose the reader's
-  // resume pointer.
+  // resume pointer. Deliberately not retried within the session — the choice
+  // is "don't destroy what's stored" over "also save what's new", which for a
+  // single-file app is the cheaper half of the trade.
   let settingsLoaded = false;
 
   async function saveSettings() {
@@ -1351,7 +1358,7 @@
         await dbSet(STORE_LIBRARY, currentRow);
       }
       await saveSettings();
-    } catch (e) { console.warn('save failed', e); }
+    } catch (e) { console.warn('progress save failed', e); }
   }
   function flushProgress() {
     if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
@@ -1382,7 +1389,7 @@
     try {
       await dbSet(STORE_LIBRARY, row);
       await saveSettings();
-    } catch (e) { console.warn('save failed', e); }
+    } catch (e) { console.warn('open-book save failed', e); }
     if (autoplay) play();
     return true;
   }
@@ -1442,8 +1449,22 @@
       wpm = s.wpm;
       speedSlider.value = wpm;
       speedNum.textContent = wpm;
-      if (s.currentBookId) await openBookById(s.currentBookId, { autoplay: false });
-    } catch (e) { /* boot empty rather than fail */ }
+      if (s.currentBookId) {
+        // Hold the stored pointer while the open is attempted. If openBookById
+        // throws — a transient read failure rather than a missing book — the
+        // outer catch leaves it intact, so the next settings write preserves
+        // the resume pointer instead of nulling it. Only a deliberate false,
+        // meaning the row or its text is genuinely gone, clears it.
+        currentBookId = s.currentBookId;
+        const ok = await openBookById(s.currentBookId, { autoplay: false });
+        if (!ok) currentBookId = null;
+      }
+    } catch (e) {
+      // settingsLoaded tells you which half failed: false means loadSettings()
+      // itself threw and no settings will be written this session; true means
+      // the book open failed but the stored pointer was preserved.
+      console.warn('boot failed (settingsLoaded=' + settingsLoaded + ')', e);
+    }
   }
   initApp();
   // Not gated on currentRow: a pending WPM change must still be written even

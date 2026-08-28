@@ -693,6 +693,9 @@
   let wpm = 350;
 
   const wordEl = document.getElementById('word');
+  // Captured from the markup rather than restated, so the hint the stage falls
+  // back to is by construction the same one the page ships with.
+  const EMPTY_HINT_HTML = wordEl.innerHTML;
   const playBtn = document.getElementById('playBtn');
   const rewindBtn = document.getElementById('rewindBtn');
   const textBtn = document.getElementById('textBtn');
@@ -863,6 +866,14 @@
     play();
   }
 
+  // The single definition of what a word is. countWords() and loadBook() must
+  // agree exactly: wordCount comes from one and the reading cursor indexes the
+  // other, so any drift between them would make every stored progress
+  // percentage wrong.
+  function tokenize(text) {
+    return String(text || '').trim().split(/\s+/).filter(Boolean);
+  }
+
   function loadBook(book, opts = {}) {
     const { restoredIndex = 0, restoredBookmarks = null } = opts;
     bookTitle = book.title || '';
@@ -871,7 +882,7 @@
     bookmarks = restoredBookmarks || [];
     let offset = 0;
     for (const ch of book.chapters) {
-      const chWords = ch.text.trim().split(/\s+/).filter(Boolean);
+      const chWords = tokenize(ch.text);
       if (!chWords.length) continue;
       chapters.push({ title: ch.title || '', start: offset, end: offset + chWords.length });
       // Not words.push(...chWords): a single chapter above the engine's
@@ -1112,7 +1123,7 @@
     currentBookId = null;
     currentRow = null;
     chapterBar.classList.remove('visible');
-    wordEl.innerHTML = '<span class="empty-hint">import an epub<br>to begin</span>';
+    wordEl.innerHTML = EMPTY_HINT_HTML;
     wordEl.style.transform = 'translateX(0)';
     playBtn.textContent = 'Start';
     updateUI();
@@ -1297,9 +1308,7 @@
 
   function countWords(chs) {
     let n = 0;
-    for (const ch of chs) {
-      n += String(ch.text || '').trim().split(/\s+/).filter(Boolean).length;
-    }
+    for (const ch of chs) n += tokenize(ch.text).length;
     return n;
   }
 
@@ -1550,7 +1559,21 @@
 
     const creatorEl = opfDoc.querySelector('metadata > [*|creator], metadata > creator');
     const author = creatorEl && creatorEl.textContent ? creatorEl.textContent.trim() : '';
-    const identEl = opfDoc.querySelector('metadata > [*|identifier], metadata > identifier');
+    // The package element names which identifier is canonical. EPUBs commonly
+    // carry several — an ISBN plus an internal UUID — and document order is
+    // not the answer. Fall back to the first when the pointer is absent or
+    // dangling.
+    const IDENT_SEL = 'metadata > [*|identifier], metadata > identifier';
+    const pkgEl = opfDoc.querySelector('package');
+    const uniqueId = pkgEl ? pkgEl.getAttribute('unique-identifier') : '';
+    let identEl = null;
+    if (uniqueId) {
+      const allIdents = opfDoc.querySelectorAll(IDENT_SEL);
+      for (let i = 0; i < allIdents.length; i++) {
+        if (allIdents[i].getAttribute('id') === uniqueId) { identEl = allIdents[i]; break; }
+      }
+    }
+    if (!identEl) identEl = opfDoc.querySelector(IDENT_SEL);
     const identifier = identEl && identEl.textContent ? identEl.textContent.trim() : '';
 
     const manifest = {};
@@ -1710,9 +1733,15 @@
       const resolved = await resolveImportId(book);
       if (resolved.existing) {
         panel.classList.remove('open');
-        await openBookById(resolved.id, { autoplay: true });
-        renderLibrary();
-        return;
+        const opened = await openBookById(resolved.id, { autoplay: true });
+        if (opened) {
+          renderLibrary();
+          return;
+        }
+        // The row is there but its text is not. The file the reader just
+        // picked is right here, so drop the stale row and import it fresh —
+        // otherwise choosing a file does nothing at all, with no explanation.
+        await deleteBook(resolved.id);
       }
       book.id = resolved.id;
       let row;

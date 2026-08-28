@@ -613,7 +613,7 @@
 
   <div class="word-frame">
     <div class="word" id="word">
-      <span class="empty-hint">paste text<br>to begin</span>
+      <span class="empty-hint">import an epub<br>to begin</span>
     </div>
   </div>
 
@@ -645,22 +645,21 @@
     <button class="icon-btn" id="rewindBtn" aria-label="Rewind">‹‹</button>
     <button class="play-btn" id="playBtn">Start</button>
     <button class="icon-btn" id="bookmarkBtn" aria-label="Bookmarks">🔖</button>
-    <button class="icon-btn" id="textBtn" aria-label="Load text">LOAD</button>
+    <button class="icon-btn" id="textBtn" aria-label="Library">LOAD</button>
   </div>
 </div>
 
 <div class="panel" id="panel">
   <div class="panel-header">
-    <div class="panel-title">Your text</div>
+    <div class="panel-title">Library</div>
     <button class="close-btn" id="closePanelBtn">Close ✕</button>
   </div>
-  <textarea id="textInput" placeholder="Paste the text you want to speed-read..."></textarea>
+  <div class="toc-list" id="libraryList"></div>
   <div class="panel-actions">
     <div class="import-row">
       <button class="sample-btn" id="epubBtn">Import EPUB</button>
       <button class="sample-btn" id="sampleBtn">Sample text</button>
     </div>
-    <button class="play-btn" id="loadBtn">Load and read</button>
   </div>
   <input type="file" accept=".epub,application/epub+zip" id="epubInput" hidden>
 </div>
@@ -704,8 +703,7 @@
   const stats = document.getElementById('stats');
   const panel = document.getElementById('panel');
   const closePanelBtn = document.getElementById('closePanelBtn');
-  const textInput = document.getElementById('textInput');
-  const loadBtn = document.getElementById('loadBtn');
+  const libraryList = document.getElementById('libraryList');
   const sampleBtn = document.getElementById('sampleBtn');
   const tapLeft = document.getElementById('tapLeft');
   const tapRight = document.getElementById('tapRight');
@@ -848,10 +846,17 @@
     persistProgress();
   }
 
-  function loadText(t) {
-    currentBookId = null;
+  const SAMPLE_TEXT = "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters. \"My dear Mr. Bennet,\" said his lady to him one day, \"have you heard that Netherfield Park is let at last?\" Mr. Bennet replied that he had not. \"But it is,\" returned she; \"for Mrs. Long has just been here, and she told me all about it.\" Mr. Bennet made no answer. \"Do not you want to know who has taken it?\" cried his wife impatiently. \"You want to tell me, and I have no objection to hearing it.\"";
+
+  // Ephemeral: no library row, no IndexedDB write at all. currentBookId is
+  // left alone on purpose, so a reload during the demo returns to the real
+  // book. currentRow === null is what makes every persistence path a no-op.
+  function loadSampleDemo() {
+    flushProgress();
     currentRow = null;
-    loadBook({ title: '', chapters: [{ title: '', text: t }] });
+    loadBook({ title: 'Sample text', chapters: [{ title: '', text: SAMPLE_TEXT }] });
+    panel.classList.remove('open');
+    play();
   }
 
   function loadBook(book, opts = {}) {
@@ -912,24 +917,11 @@
   textBtn.addEventListener('click', () => {
     stop();
     panel.classList.add('open');
-    if (!textInput.value && words.length) {
-      // already loaded, leave empty
-    }
   });
 
   closePanelBtn.addEventListener('click', () => panel.classList.remove('open'));
 
-  loadBtn.addEventListener('click', () => {
-    const t = textInput.value;
-    if (!t.trim()) return;
-    loadText(t);
-    panel.classList.remove('open');
-    play();
-  });
-
-  sampleBtn.addEventListener('click', () => {
-    textInput.value = "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters. \"My dear Mr. Bennet,\" said his lady to him one day, \"have you heard that Netherfield Park is let at last?\" Mr. Bennet replied that he had not. \"But it is,\" returned she; \"for Mrs. Long has just been here, and she told me all about it.\" Mr. Bennet made no answer. \"Do not you want to know who has taken it?\" cried his wife impatiently. \"You want to tell me, and I have no objection to hearing it.\"";
-  });
+  sampleBtn.addEventListener('click', loadSampleDemo);
 
   speedSlider.addEventListener('input', e => {
     wpm = parseInt(e.target.value);

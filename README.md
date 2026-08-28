@@ -15,7 +15,6 @@ Thoth is a single-file speed-reader built around **Rapid Serial Visual Presentat
 ## Features
 
 - **EPUB import** with automatic chapter and table-of-contents extraction
-- **Plain-text mode** for quick paste-and-read
 - **Chapter navigation** with a live progress indicator
 - **Bookmarks** to save and restore reading positions
 - **Adjustable WPM** (150–800) with live speed control
@@ -33,12 +32,12 @@ Thoth is a single-file speed-reader built around **Rapid Serial Visual Presentat
 
 ## Usage
 
-1. Click **LOAD** to open the input panel.
-2. Paste text or click **Import EPUB** to load a book.
-3. Click **Load and read** → press **Start**.
+1. Click **LOAD** to open your library.
+2. Click **Import EPUB** to add a book, or **Sample text** to try the reader without one.
+3. Pick a book from the list → press **Continue**.
 4. Adjust **Speed** with the slider; use **‹‹** to rewind, **🔖** to manage bookmarks, and the chapter bar to jump between chapters.
 
-Your last book and reading position are restored automatically on next visit.
+Your library and reading positions are restored automatically on next visit.
 
 ## Browser support
 

@@ -1,6 +1,10 @@
 # Internal notes
 annotations.md
 
+# Agent session artifacts — process, not product
+docs/superpowers/
+.superpowers/
+
 # Playwright MCP
 .playwright-mcp/
 

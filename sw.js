@@ -1,4 +1,4 @@
-const CACHE = 'thoth-v15';
+const CACHE = 'thoth-v16';
 const ASSETS = [
   './',
   'index.html',

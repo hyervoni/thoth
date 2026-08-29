@@ -1087,6 +1087,37 @@
     timer = setTimeout(tick, d);
   }
 
+  // RSVP reading is hands-off: you never touch the screen, so a phone dims
+  // and locks mid-book and the visibilitychange handler below then pauses
+  // playback. Hold a screen wake lock while playing.
+  //
+  // Best-effort on purpose. Absent before Safari 16.4, refused under iOS Low
+  // Power Mode, and the browser may revoke it at any time — so nothing here
+  // gates playback, and every failure is swallowed. navigator.wakeLock is
+  // simply undefined on the older engines this file still supports.
+  let wakeLock = null;
+
+  function requestWakeLock() {
+    if (!navigator.wakeLock) return;
+    navigator.wakeLock.request('screen').then(lock => {
+      // stop() can land while the request is still in flight
+      if (!playing) { lock.release().catch(() => {}); return; }
+      wakeLock = lock;
+      // The browser drops the lock on its own when the page hides; without
+      // this we would keep a released sentinel and think we still hold one.
+      lock.addEventListener('release', () => {
+        if (wakeLock === lock) wakeLock = null;
+      });
+    }).catch(() => {});
+  }
+
+  function releaseWakeLock() {
+    if (!wakeLock) return;
+    const lock = wakeLock;
+    wakeLock = null;
+    lock.release().catch(() => {});
+  }
+
   function play() {
     if (!words.length) {
       panel.classList.add('open');
@@ -1095,6 +1126,7 @@
     if (cursor >= words.length) cursor = 0;
     playing = true;
     playBtn.textContent = 'Pause';
+    requestWakeLock();
     tick();
   }
 
@@ -1102,6 +1134,7 @@
     playing = false;
     playBtn.textContent = cursor >= words.length ? 'Restart' : 'Continue';
     if (timer) { clearTimeout(timer); timer = null; }
+    releaseWakeLock();
     persistProgress();
   }
 

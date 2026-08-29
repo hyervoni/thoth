@@ -28,6 +28,13 @@
     --line-panel: #3a3229;
     --line-btn: #4a4238;
     --paper: #17130f;
+
+    /* Type stacks live here, not spread across 22 rules. Fallbacks are part
+       of the token: the faces are self-hosted and the first paint happens
+       before they load, so what the fallback looks like is not academic. */
+    --font-ui: 'Fraunces', Georgia, serif;
+    --font-read: 'Newsreader', Georgia, serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   button, input, textarea {
@@ -42,7 +49,7 @@
     overflow: hidden;
     background: var(--bg);
     color: var(--ink);
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: var(--font-ui);
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
@@ -90,7 +97,7 @@
     display: flex;
     align-items: baseline;
     gap: 14px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     color: var(--ink-soft);
     letter-spacing: 0.14em;
@@ -161,7 +168,7 @@
   }
 
   .word {
-    font-family: 'Newsreader', Georgia, serif;
+    font-family: var(--font-read);
     font-weight: 500;
     /* Adaptive floor: shrinks from 46px down to 32px on narrow phones so
        4-syllable words like "computadora" or "investigación" fit with ORP
@@ -211,7 +218,7 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     color: var(--ink-soft);
     letter-spacing: 0.12em;
@@ -241,7 +248,7 @@
     justify-content: space-between;
     align-items: baseline;
     gap: 12px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 9.5px;
     color: var(--ink-soft);
     letter-spacing: 0.16em;
@@ -256,7 +263,7 @@
   }
   .chapter-counter { flex-shrink: 0; }
   .chapter-title-text {
-    font-family: 'Fraunces', serif;
+    font-family: var(--font-ui);
     font-style: italic;
     font-size: 16px;
     font-weight: 500;
@@ -291,7 +298,7 @@
   .toc-item:hover { background: rgba(255, 255, 255, 0.03); }
   .toc-item:active { background: rgba(255, 255, 255, 0.06); }
   .toc-item .num {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 11px;
     color: var(--ink-soft);
     letter-spacing: 0.05em;
@@ -299,7 +306,7 @@
     flex-shrink: 0;
   }
   .toc-item .label {
-    font-family: 'Fraunces', serif;
+    font-family: var(--font-ui);
     font-size: 16px;
     color: var(--ink);
     line-height: 1.4;
@@ -309,7 +316,7 @@
   .toc-item.current .num { color: var(--accent); font-weight: 600; }
   .toc-item.current .label { color: var(--accent); font-style: italic; font-weight: 500; }
   .toc-item .meta {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     color: var(--ink-soft);
     letter-spacing: 0.05em;
@@ -323,7 +330,7 @@
     border: none;
     height: 56px;
     padding: 0 24px;
-    font-family: 'Fraunces', serif;
+    font-family: var(--font-ui);
     font-size: 16px;
     font-weight: 500;
     letter-spacing: 0.01em;
@@ -362,7 +369,7 @@
     color: var(--ink);
   }
   .bookmark-item .label {
-    font-family: 'Fraunces', serif;
+    font-family: var(--font-ui);
     font-size: 16px;
     line-height: 1.4;
     flex: 1;
@@ -372,7 +379,7 @@
     white-space: nowrap;
   }
   .bookmark-item .meta {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     color: var(--ink-soft);
     letter-spacing: 0.05em;
@@ -420,7 +427,7 @@
     text-overflow: clip;
   }
   .book-item .sub {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     color: var(--ink-soft);
     letter-spacing: 0.05em;
@@ -430,7 +437,7 @@
     padding: 40px 16px;
     text-align: center;
     color: var(--ink-soft);
-    font-family: 'Fraunces', serif;
+    font-family: var(--font-ui);
     font-style: italic;
     font-size: 15px;
   }
@@ -461,7 +468,7 @@
     color: var(--paper);
     border: none;
     padding: 0 16px;
-    font-family: 'Fraunces', serif;
+    font-family: var(--font-ui);
     font-size: 17px;
     font-weight: 500;
     letter-spacing: 0.03em;
@@ -517,7 +524,7 @@
     gap: 12px;
   }
   .speed-label {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     color: var(--ink-soft);
     letter-spacing: 0.16em;
@@ -527,14 +534,14 @@
     display: flex;
     align-items: baseline;
     gap: 7px;
-    font-family: 'Fraunces', serif;
+    font-family: var(--font-ui);
     font-size: 34px;
     font-weight: 300;
     font-variation-settings: "opsz" 144;
     letter-spacing: -0.01em;
   }
   .speed-value small {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 9.5px;
     font-weight: 400;
     color: var(--ink-soft);
@@ -614,7 +621,7 @@
     margin-bottom: 20px;
   }
   .panel-title {
-    font-family: 'Fraunces', serif;
+    font-family: var(--font-ui);
     font-size: 23px;
     font-weight: 700;
     font-style: italic;
@@ -626,7 +633,7 @@
     gap: 8px;
     background: transparent;
     border: none;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     color: var(--ink-soft);
     cursor: pointer;
@@ -655,7 +662,7 @@
     background: transparent;
     border: 1px solid var(--line-btn);
     padding: 0 18px;
-    font-family: 'Fraunces', serif;
+    font-family: var(--font-ui);
     font-size: 14px;
     font-style: italic;
     font-weight: 500;
@@ -704,7 +711,7 @@
     font-size: min(26px, max(20px, 3.5vw));
   }
   .empty-hint .line-2 {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     font-style: normal;
     color: var(--ink-dim);

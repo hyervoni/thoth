@@ -94,15 +94,22 @@
     margin-bottom: 4px;
   }
   .stats {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
     color: var(--ink-soft);
     letter-spacing: 0.14em;
     text-transform: uppercase;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex-shrink: 0;
   }
+  /* Label dimmer than the value: two durations side by side are only
+     legible if you can tell at a glance which is which. */
+  .stats .k { color: var(--ink-dim); }
+  /* With one duration on screen there is nothing to disambiguate. */
+  .stats .stat.bare .k { display: none; }
 
   /* Reader stage */
   .stage {
@@ -813,7 +820,10 @@
     <span>Thoth</span>
     <span class="logo-dot"></span>
   </div>
-  <div class="stats" id="stats">— · —</div>
+  <div class="stats" id="stats">
+    <span class="stat" id="statChapter"><span class="k">ch</span> <span class="v">—</span></span>
+    <span class="stat bare" id="statBook"><span class="k">book</span> <span class="v">—</span></span>
+  </div>
 </header>
 
 <div class="stage">
@@ -929,7 +939,10 @@
   const progressFill = document.getElementById('progressFill');
   const progressCount = document.getElementById('progressCount');
   const progressPct = document.getElementById('progressPct');
-  const stats = document.getElementById('stats');
+  const statChapter = document.getElementById('statChapter');
+  const statBook = document.getElementById('statBook');
+  const etaChapter = statChapter && statChapter.querySelector('.v');
+  const etaBook = statBook && statBook.querySelector('.v');
   const panel = document.getElementById('panel');
   const closePanelBtn = document.getElementById('closePanelBtn');
   const libraryList = document.getElementById('libraryList');
@@ -1019,6 +1032,17 @@
     return base * factor;
   }
 
+  // Words left → a compact duration at the current pace. Hours only when
+  // there are any, seconds only when there are no minutes, and never 0s.
+  function etaFor(wordCount) {
+    const mins = wordCount / wpm;
+    const h = Math.floor(mins / 60);
+    const m = Math.floor(mins - h * 60);
+    if (h > 0) return h + 'h' + (m > 0 ? ' ' + m + 'm' : '');
+    if (m > 0) return m + 'm';
+    return Math.max(1, Math.round(mins * 60)) + 's';
+  }
+
   function updateUI() {
     const total = words.length;
     const done = Math.min(cursor, total);
@@ -1035,16 +1059,19 @@
       chapterCounter.textContent = `${ci + 1} / ${chapters.length}`;
       bookTitleText.textContent = bookTitle || 'Book';
     }
-    if (!stats) return;
-    if (total) {
-      const remainingWords = Math.max(total - cursor, 0);
-      const minsLeft = remainingWords / wpm;
-      const m = Math.floor(minsLeft);
-      const s = Math.round((minsLeft - m) * 60);
-      stats.textContent = total + ' words · ' + (m > 0 ? m + 'm' : s + 's');
-    } else {
-      stats.textContent = '— · —';
+    if (!statBook) return;
+    // Time left in the chapter answers "can I finish this before my stop";
+    // time left in the book gives the commitment. A word count answered
+    // neither, and repeated the denominator already in the progress row.
+    // One chapter means the two numbers are the same, so only show the book.
+    const showChapter = total > 0 && chapters.length > 1 && ci >= 0;
+    statChapter.style.display = showChapter ? '' : 'none';
+    statBook.classList.toggle('bare', !showChapter);
+    if (showChapter) {
+      const chEnd = ci + 1 < chapters.length ? chapters[ci + 1].start : total;
+      etaChapter.textContent = etaFor(Math.max(chEnd - cursor, 0));
     }
+    etaBook.textContent = total ? etaFor(Math.max(total - cursor, 0)) : '—';
   }
 
   function tick() {

@@ -8,6 +8,14 @@
   A minimalist, browser-based speed reader with RSVP playback, EPUB import, chapter navigation, and offline persistence.
 </p>
 
+<p align="center">
+  <a href="https://hyervoni.github.io/thoth/"><strong>Open Thoth →</strong></a>
+</p>
+
+<p align="center">
+  No install, no account. Press <em>Sample text</em> to try it without an EPUB.
+</p>
+
 ## What it is
 
 Thoth is a single-file speed-reader built around **Rapid Serial Visual Presentation (RSVP)**. Words flash one at a time on a focused stage at a user-controlled speed (150–800 WPM), removing the saccadic overhead of moving your eyes across a page.
@@ -32,10 +40,11 @@ Thoth is a single-file speed-reader built around **Rapid Serial Visual Presentat
 
 ## Usage
 
-1. Click **LOAD** to open your library.
-2. Click **Import EPUB** to add a book, or **Sample text** to try the reader without one.
-3. Pick a book from the list → press **Continue**.
-4. Adjust **Speed** with the slider; use **‹‹** to rewind, **🔖** to manage bookmarks, and the chapter bar to jump between chapters.
+1. Open the **library** (the stacked-books icon, bottom right) — or go straight to **Sample text** to try the reader without an EPUB.
+2. **Import EPUB** to add a book; pick it from the list and press **Continue**.
+3. Set the pace with the **Speed** slider (150–800 WPM).
+4. The **rewind** icon steps back, the **bookmark** icon saves and restores positions, and the chapter line above the controls opens the table of contents.
+5. Tap the middle of the word to enter **focus mode** — everything but the word disappears. Tap again, or press Escape, to leave.
 
 Your library and reading positions are restored automatically on next visit.
 

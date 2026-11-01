@@ -752,11 +752,12 @@
     padding: 0;
     -webkit-tap-highlight-color: transparent;
   }
-  .tap-zone:focus { outline: none; }
-  .tap-zone:focus-visible {
+  /* Same ring-by-default pattern as .goal-btn, for Safari before 15.4. */
+  .tap-zone:focus {
     outline: 2px solid var(--accent);
     outline-offset: -4px;
   }
+  .tap-zone:focus:not(:focus-visible) { outline: none; }
   .tap-zone:active { background: rgba(231, 76, 60, 0.04); }
   /* Align tap zones with the word frame (max-width: 720px, centered) so the
      middle stays clickable for focus toggle even on wide screens. On narrow
@@ -799,6 +800,84 @@
     max-width: none;
     margin-top: 0;
   }
+
+  /* Daily goal dialog — a card over the dimmed reader, so the word you
+     stopped on stays visible behind it. Margins rather than flex gap, and
+     explicit edges rather than inset: neither is in Safari 12. */
+  .goal-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 200;
+    display: none;
+    /* Anchored low, over the controls, rather than centred: centred, the card
+       sat on the lower half of the word it is meant to leave in view. */
+    align-items: flex-end;
+    justify-content: center;
+    /* Bottom padding matches body's, so the card's lower edge lands on the
+       control row's and no button outline peeks out beneath it. */
+    padding: 24px 24px max(env(safe-area-inset-bottom), 20px);
+    background: rgba(11, 10, 9, 0.8);
+    animation: fadeIn 0.25s ease;
+  }
+  .goal-overlay.open { display: flex; }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .goal-card {
+    width: 100%;
+    max-width: 380px;
+    background-color: var(--paper);
+    border: 1px solid var(--line-panel);
+    border-left: 2px solid var(--accent);
+    padding: 26px 24px 22px;
+    display: flex;
+    flex-direction: column;
+  }
+  .goal-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .goal-title {
+    margin-top: 14px;
+    font-family: var(--font-ui);
+    font-size: 27px;
+    font-style: italic;
+    font-weight: 500;
+    font-variation-settings: "opsz" 144;
+  }
+  .goal-text {
+    margin-top: 8px;
+    font-family: var(--font-read);
+    font-size: 17px;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+  .goal-btn {
+    margin-top: 24px;
+    height: 56px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    font-family: var(--font-ui);
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .goal-btn:active { transform: scale(0.98); background: var(--accent); }
+  /* Ring by default, removed only where :focus-visible is understood. Safari
+     before 15.4 drops the whole :not(:focus-visible) rule, so it keeps the
+     ring instead of losing it for keyboard users. */
+  .goal-btn:focus { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .goal-btn:focus:not(:focus-visible) { outline: none; }
 
   /* Short viewports (small phones, landscape): the header costs vertical
      room, so give some back before the stage starts clipping. */
@@ -913,6 +992,15 @@
   <div class="toc-list" id="bookmarkList"></div>
 </div>
 
+<div class="goal-overlay" id="goalOverlay" role="dialog" aria-modal="true" aria-labelledby="goalTitle" aria-describedby="goalText">
+  <div class="goal-card">
+    <div class="goal-label" id="goalLabel"></div>
+    <div class="goal-title" id="goalTitle">Congratulations!</div>
+    <p class="goal-text" id="goalText"></p>
+    <button class="goal-btn" id="goalBtn" type="button">Keep reading</button>
+  </div>
+</div>
+
 <script>
   // --- State ---
   let words = [];
@@ -961,6 +1049,42 @@
   const closeBookmarksBtn = document.getElementById('closeBookmarksBtn');
   const addBookmarkBtn = document.getElementById('addBookmarkBtn');
   const bookmarkList = document.getElementById('bookmarkList');
+  const goalOverlay = document.getElementById('goalOverlay');
+  const goalBtn = document.getElementById('goalBtn');
+  const goalLabel = document.getElementById('goalLabel');
+  const goalText = document.getElementById('goalText');
+
+  // --- Daily reading goal ---
+  // RSVP has no pages, so a page is a word budget. 250 words is the usual
+  // printed-page figure; the goal is counted in words and shown in pages.
+  const DAILY_GOAL_PAGES = 10;
+  const WORDS_PER_PAGE = 250;
+  const DAILY_GOAL_WORDS = DAILY_GOAL_PAGES * WORDS_PER_PAGE;
+
+  // Local calendar day, so the count resets at the reader's own midnight
+  // rather than UTC's.
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
+  // A stored record from an earlier day is as good as none.
+  function freshDaily(stored) {
+    const today = todayKey();
+    if (stored && stored.day === today) {
+      return { day: today, words: stored.words || 0, celebrated: !!stored.celebrated };
+    }
+    return { day: today, words: 0, celebrated: false };
+  }
+
+  let daily = freshDaily(null);
+
+  // Copy built from the constant, so changing the goal cannot leave the
+  // card announcing the old number.
+  goalLabel.textContent = 'Daily goal · ' + DAILY_GOAL_PAGES + ' / ' + DAILY_GOAL_PAGES;
+  goalText.textContent = "You've read your " + DAILY_GOAL_PAGES + ' pages for today.';
 
   // Optimal Recognition Point — pivot letter index based on word length
   function pivotIndex(word) {
@@ -1084,8 +1208,52 @@
     if (cursor % 30 === 0) persistProgress();
     const d = delayFor(w);
     cursor++;
+    if (countReadWord()) {
+      // The goal word stays on stage behind the card; Keep reading resumes
+      // from the word after it. Flushed, not debounced: if the app is killed
+      // in the next 600ms (iOS need not fire beforeunload), an unsaved
+      // celebrated flag would show the card a second time today.
+      stop();
+      flushProgress();
+      openGoalDialog();
+      return;
+    }
     timer = setTimeout(tick, d);
   }
+
+  // Called once per word actually shown during playback, so chapter jumps,
+  // bookmarks and rewinds never count — but re-reading after a rewind does.
+  // The sample demo owns no row and does not count. Returns true exactly
+  // once a day: on the word that reaches the goal.
+  function countReadWord() {
+    if (!currentRow) return false;
+    if (daily.day !== todayKey()) daily = freshDaily(null);
+    daily.words++;
+    if (daily.celebrated || daily.words < DAILY_GOAL_WORDS) return false;
+    daily.celebrated = true;
+    return true;
+  }
+
+  function isGoalDialogOpen() {
+    return goalOverlay.classList.contains('open');
+  }
+
+  function openGoalDialog() {
+    goalOverlay.classList.add('open');
+    goalBtn.focus();
+  }
+
+  function closeGoalDialog() {
+    if (!isGoalDialogOpen()) return;   // Enter/Space can also fire the click
+    goalOverlay.classList.remove('open');
+    goalBtn.blur();
+    // The goal word may have been the book's last: resuming would restart
+    // the book from zero, so show the end instead.
+    if (cursor < words.length) play();
+    else { renderWord(null); updateUI(); }
+  }
+
+  goalBtn.addEventListener('click', closeGoalDialog);
 
   // RSVP reading is hands-off: you never touch the screen, so a phone dims
   // and locks mid-book and the visibilitychange handler below then pauses
@@ -1265,8 +1433,23 @@
 
   // Keyboard support
   document.addEventListener('keydown', e => {
-    if (panel.classList.contains('open') || tocPanel.classList.contains('open')) return;
-    if (e.code === 'Space') { e.preventDefault(); playing ? stop() : play(); }
+    // The card is modal: its keys dismiss it, Tab cannot walk focus out to
+    // the covered controls, and nothing reaches the reader behind it.
+    if (isGoalDialogOpen()) {
+      if (e.code === 'Tab') {
+        e.preventDefault();
+        goalBtn.focus();
+      } else if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space' || e.code === 'NumpadEnter') {
+        e.preventDefault();
+        if (!e.repeat) closeGoalDialog();
+      }
+      return;
+    }
+    if (panel.classList.contains('open') || tocPanel.classList.contains('open') ||
+        bookmarksPanel.classList.contains('open')) return;
+    // A held Space auto-repeats; acting on the repeats would flip play/pause
+    // several times a second.
+    if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) { playing ? stop() : play(); } }
     if (e.code === 'ArrowLeft') rewindBtn.click();
     if (e.code === 'Escape' && document.body.classList.contains('focus-mode')) toggleFocusMode();
   });
@@ -1310,6 +1493,9 @@
 
   chapterBar.addEventListener('click', () => {
     if (!chapters.length) return;
+    // A full-screen panel over a running reader: playback must not carry on
+    // unseen behind it.
+    stop();
     renderToc();
     tocPanel.classList.add('open');
   });
@@ -1495,6 +1681,9 @@
   }
 
   bookmarkBtn.addEventListener('click', () => {
+    // Same as the Library and Chapters panels: stop first, so reading does
+    // not continue behind the panel and the saved position is the one shown.
+    stop();
     renderBookmarks();
     bookmarksPanel.classList.add('open');
   });
@@ -1625,8 +1814,8 @@
 
   async function loadSettings() {
     const s = await dbGet(STORE_SETTINGS, SETTINGS_KEY);
-    if (!s) return { wpm: 350, currentBookId: null };
-    return { wpm: s.wpm || 350, currentBookId: s.currentBookId || null };
+    if (!s) return { wpm: 350, currentBookId: null, daily: freshDaily(null) };
+    return { wpm: s.wpm || 350, currentBookId: s.currentBookId || null, daily: freshDaily(s.daily) };
   }
 
   // Never write settings we failed to read: on a boot where loadSettings()
@@ -1639,7 +1828,7 @@
 
   async function saveSettings() {
     if (!settingsLoaded) return;
-    await dbSet(STORE_SETTINGS, { wpm: wpm, currentBookId: currentBookId }, SETTINGS_KEY);
+    await dbSet(STORE_SETTINGS, { wpm: wpm, currentBookId: currentBookId, daily: daily }, SETTINGS_KEY);
   }
 
   let saveTimer = null;
@@ -1744,6 +1933,7 @@
       const s = await loadSettings();
       settingsLoaded = true;
       wpm = s.wpm;
+      daily = s.daily;
       speedSlider.value = wpm;
       speedNum.textContent = wpm;
       if (s.currentBookId) {

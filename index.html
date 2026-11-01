@@ -1999,6 +1999,12 @@
     return 'book-' + Date.now().toString(36);
   }
 
+  // Elements that end a run of text. <br> and <hr> are included: they break
+  // a line without being containers.
+  const EPUB_BLOCK_SEL = 'address, article, aside, blockquote, br, caption, dd, div, dl, dt, ' +
+    'figcaption, figure, footer, h1, h2, h3, h4, h5, h6, header, hr, li, nav, ol, p, pre, ' +
+    'section, table, tbody, td, tfoot, th, thead, tr, ul';
+
   async function parseEpub(file) {
     const JSZip = await loadJSZip();
     const zip = await JSZip.loadAsync(file);
@@ -2135,6 +2141,20 @@
       const xhtml = await f.async('string');
       const doc = new DOMParser().parseFromString(xhtml, 'text/html');
       doc.querySelectorAll('script, style').forEach(el => el.remove());
+      // textContent concatenates block elements with nothing between them,
+      // so minified XHTML (<h1>One</h1><p>Two…) fused "OneTwo" into a single
+      // word. A space on both sides of every block keeps them apart: after
+      // alone misses loose text that precedes a nested block, as in
+      // <li>alpha<ul><li>sub… or <div>Hello<p>World. The whitespace collapse
+      // below absorbs the extras in ordinary markup.
+      // Inline elements are left alone on purpose: <span>O</span>nce is one
+      // word (drop caps), and splitting it would be the opposite bug.
+      if (doc.body) {
+        doc.body.querySelectorAll(EPUB_BLOCK_SEL).forEach(el => {
+          el.insertAdjacentText('beforebegin', ' ');
+          el.insertAdjacentText('afterend', ' ');
+        });
+      }
       const text = ((doc.body && doc.body.textContent) || '').replace(/\s+/g, ' ').trim();
       if (!text) continue;
       ordinal++;
